@@ -4,8 +4,8 @@ from .form import Ui_Dialog
 from qgis.core import *
 from  qgis.gui import *
 from qgis.utils import *
-from .LasiaPlugin import LasiaPlugin
+from .FieldsClassifier import FieldsClassifier
 
 
 def classFactory(iface):
-    return LasiaPlugin(iface)
+    return FieldsClassifier(iface)

@@ -30,7 +30,7 @@ CONVERT_UNITS = UNITS_JSON["convert_units"]
 with importlib.resources.path("LasiaPlugin", "iconPlugin.png") as data_path:
     icon_path = str(data_path.absolute())
 
-class LasiaPlugin:
+class FieldsClassifier:
     """
     PL: Klasa reprezentuje plugin o nazwie LasiaPlugin.
         Plugin pozwala na obliczenie statystyk obiektów (sume powierzchni, średnią, odchylenie standardowe)
