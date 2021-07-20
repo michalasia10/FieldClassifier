@@ -16,7 +16,7 @@ import importlib.resources
 
 
 # load json
-with importlib.resources.path("LasiaPlugin", "units.json") as data_path:
+with importlib.resources.path("FieldsClassifier", "units.json") as data_path:
     with open(data_path) as f:
         UNITS_JSON = json.load(f)
 
@@ -27,8 +27,17 @@ UNITS = UNITS_JSON["units"]
 CONVERT_UNITS = UNITS_JSON["convert_units"]
 
 #load icon
-with importlib.resources.path("LasiaPlugin", "iconPlugin.png") as data_path:
+with importlib.resources.path("FieldsClassifier", "iconPlugin.png") as data_path:
     icon_path = str(data_path.absolute())
+
+
+#CRS = {
+ #   "2180": ,
+  #  "2177": QgsCoordinateReferenceSystem(2177),
+   # "4326": QgsCoordinateReferenceSystem(4326),
+#}
+
+
 
 class FieldsClassifier:
     """
@@ -120,10 +129,10 @@ class FieldsClassifier:
         self.iface = iface
         self._sumArea: float = 0.0
         self._mean: float = 0.0
-        self._sigmoid: float = 0.0
         self._unit: str = "m2"  # default value 'm2'
-        self._plotName: str = ''  # default value empty string
         self._areaFeat: list = []  # default value empty list
+        self._selectedFeat: list = [] # empty list for feats
+
 
     def initGui(self) -> None:
         """
@@ -132,7 +141,7 @@ class FieldsClassifier:
         :return: None
         """
 
-        self.action, self.menu = self._add_action(icon_path, "LasiaPlugin", "Menu LasiaPlugin")
+        self.action, self.menu = self._add_action(icon_path,  "Field's Stats","Fields Classifier",)
 
     def _add_action(self, pathIcon: str, pluginTitle: str, menuTitle: str):
         """
@@ -168,11 +177,12 @@ class FieldsClassifier:
         Metoda odpowiada za otworzenie okna z folderami w celu wyszukania pliku, po dodaniu warstwa jest w układzie 2180
 
         """
-        crs = QgsCoordinateReferenceSystem(2180)
+        crs_box = self._check_crs_in_comboBox()
+        crs = QgsCoordinateReferenceSystem.fromEpsgId(int(crs_box[7:]))
         QgsProject.instance().setCrs(crs)
         path: tuple = QFileDialog.getOpenFileName(self.window, 'Otworz', "C:\\", '*.shp')
         if QFileDialog.accepted:
-            self.iface.addVectorLayer(path[0], 'plik', 'ogr').setCrs(crs)
+            self.iface.addVectorLayer(path[0], '', 'ogr').setCrs(crs)
             self.form.lineEdit_5.setText(path[0])
 
     def _select(self)->None:
@@ -180,9 +190,10 @@ class FieldsClassifier:
         Metoda odpowiada za zaznaczenie obiektów okręgiem, jeśli nie ma żadnej warstwy pokaże ERROR.
         :return: None
         """
-        self.iface.actionSelectRadius().trigger()
-        noneValues: bool = self._check_is_any_active_layer()
-        if not noneValues:
+        self._check_is_any_selected_feat()
+        self.iface.actionSelect().trigger()
+        noLayers: bool = self._check_is_any_active_layer()
+        if not noLayers:
             self.window.hide()
             layer = self.iface.activeLayer()
             layer.selectionChanged.connect(self._end_select)
@@ -196,18 +207,17 @@ class FieldsClassifier:
         :return: None
         """
         layer = self.iface.activeLayer()
-        self._count_sum_area(layer)
+        layer.selectionChanged.disconnect(self._end_select)
+        self._create_selected_list_of_feat()
+        self._count_sum_area()
         self._count_mean()
-        self._count_standard_deviation()
         self.form.lineEdit_2.setText(f"{round(self._sumArea, 5)}")
         self.form.lineEdit_3.setText(f"{round(self._mean, 5)}")
-        self.form.lineEdit_4.setText(f"{round(self._sigmoid, 5)}")
-        layer.selectionChanged.disconnect(self._end_select)
         self._count_objects()
         self._active_widgets()
         self.window.show()
 
-    def _count_sum_area(self, layer)->None:
+    def _count_sum_area(self)->None:
         """
         Metoda odpowiada za obliczenie sumy powierzchni zaznaczonych obiektów.
         Metoda aktuzaliuje zmienne w klasie.
@@ -217,17 +227,19 @@ class FieldsClassifier:
         """
         form = self.form
         unitName: str = form.comboBox.currentText()
-        labels: list = [form.label_5, form.label_6, form.label_7]
+        labels: list = [form.label_5, form.label_6,]
         self._set_text_for_list(labels,unitName)
-        unit: str = UNITS[unitName]
-        features = [obiekt for obiekt in layer.selectedFeatures()]
-        area = QgsDistanceArea()
-        area.areaUnits()
-        for feat in features:
-            pomiar = area.measureArea(feat.geometry())
-            pomiar = area.convertAreaMeasurement(pomiar, QgsUnitTypes.AreaUnit(unit))
+        expression = QgsExpression('$area')
+        context = QgsExpressionContext()
+        for feat in self._selectedFeat:
+            context.setFeature(feat)
+            pomiar =expression.evaluate(context)
             self._sumArea += pomiar
             self._areaFeat.append(pomiar)
+
+    def _create_selected_list_of_feat(self):
+        layer = self.iface.activeLayer()
+        self._selectedFeat = [feat for feat in layer.selectedFeatures()]
 
     def _count_mean(self)->None:
         """
@@ -236,13 +248,6 @@ class FieldsClassifier:
         """
         self._mean = self._sumArea / len(self._areaFeat)
 
-    def _count_standard_deviation(self):
-        """
-        Metoda odpowiada za obliczenie odchylenia standardowego dla zaznaczonych obiektów i aktualizacje zmiennych
-        :return: None
-        """
-        meanSquare: float = sum(list(map(lambda x: pow(x, 2), self._areaFeat))) / len(self._areaFeat) - pow(self._mean, 2)
-        self._sigmoid = sqrt(meanSquare)
 
     def _count_objects(self)->None:
         """
@@ -260,10 +265,11 @@ class FieldsClassifier:
         self.form.lineEdit.setText('0')
         form = self.form
         valuesInText = [form.lineEdit_2, form.lineEdit_3, form.lineEdit_4]
-        self.form.graphicsView.scene().clear()
+        #self.form.graphicsView.scene().clear()
         self._active_widgets(False)
         self._set_text_for_list(valuesInText, "")
-
+        self._sumArea = 0.0
+        self._check_is_any_selected_feat()
 
     def _refresh_lineEdits(self)->None:
         """
@@ -275,10 +281,10 @@ class FieldsClassifier:
         self._check_unit_in_comboBox()
         self._refresh_area_values()
         if self._unit != self.form.label_5.text():
-            labels: list = [form.label_5, form.label_6, form.label_7]
+            labels: list = [form.label_5, form.label_6]
             self._set_text_for_list(labels, self._unit)
-            valuesInText: list = [form.lineEdit_2, form.lineEdit_3, form.lineEdit_4]
-            values: list = [self._sumArea, self._mean, self._sigmoid]
+            valuesInText: list = [form.lineEdit_2, form.lineEdit_3]
+            values: list = [self._sumArea, self._mean]
             for idx, text in enumerate(valuesInText):
                 newValue = values[idx]
                 text.setText(f"{round(newValue, 5)}")
@@ -302,9 +308,18 @@ class FieldsClassifier:
         if self._unit != self.form.label_5.text():
             newUnit = CONVERT_UNITS[oldUnit][self._unit]
             self._mean = self._mean * newUnit
-            self._sigmoid = self._sigmoid * newUnit
             self._sumArea = self._sumArea * newUnit
             self._areaFeat = [feat * newUnit for feat in self._areaFeat]
+
+
+    def _check_is_any_selected_feat(self):
+        self._create_selected_list_of_feat()
+        if self._selectedFeat:
+            self.iface.activeLayer().removeSelection()
+
+    def _check_crs_in_comboBox(self)->str:
+        crs : str = self.form.comboBox_2.currentText()
+        return crs
 
     def _check_unit_in_comboBox(self)->None:
         """
@@ -339,8 +354,8 @@ class FieldsClassifier:
 
         widgets = [form.label,form.label_2,form.label_3,
                    form.label_4,form.label_5,form.label_6,
-                   form.label_7,form.label_11,form.label_8,
-                   form.label_10,form.lineEdit_2,form.lineEdit_3,
+                   form.label_11,form.label_8,
+                   form.lineEdit_2,form.lineEdit_3,
                    form.lineEdit_4,form.comboBox,form.pushButton_3,
                    form.lineEdit,form.pushButton_5,form.comboBox_2,
                    form.pushButton]
@@ -403,8 +418,7 @@ class FieldsClassifier:
             rect1 = plt.bar(index, subMean, widthBar, color='red', label='Mean')
             rect2 = plt.bar(index + widthBar, subSig, widthBar, color='green', label='Sigmoid')
             ax.set_title(
-                f"Wykres dla różnicy między \npowierzchnią obiektów, a średnią: {round(self._mean, 5)} {self._unit} \n"
-                f"oraz odchyleniem {round(self._sigmoid, 5)} {self._unit}")
+                f"Wykres dla różnicy między \npowierzchnią obiektów, a średnią: {round(self._mean, 5)} {self._unit} \n")
             ax.set_xticks(index + widthBar, str(list((range(len(subMean))))))
             ax.legend()
 
