@@ -20,8 +20,6 @@ with importlib.resources.path("FieldsClassifier", "units.json") as data_path:
     with open(data_path) as f:
         UNITS_JSON = json.load(f)
 
-# load units from json
-UNITS = UNITS_JSON["units"]
 
 # load units to convert from json
 CONVERT_UNITS = UNITS_JSON["convert_units"]
