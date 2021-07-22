@@ -131,16 +131,14 @@ class FieldsClassifier:
         self._mean: float = 0.0
         self._unit: str = "m2"  # default value 'm2'
         self._areaFeat: List[int] = []  # default value empty list
-        self._selectedFeat: list = [] # empty list for feats
-        self._uniqueClasses : set = {}
-        self._numberOfUniqueClasses: int = 0
-        self._classesArea : dict[int : list] = {}
-
+        self._selectedFeat: list = [] # default  empty list for feats
+        self._uniqueClasses : set = {} # deafult empty set for classes
+        self._numberOfUniqueClasses: int = 0 # deafult 0 number of classes
+        self._classesArea : dict[int : list] = {} # deafult empty dict for area
 
     def initGui(self) -> None:
         """
-        Metoda odpowiada za inicjalizacje pluginu i uruchomienie metody _add_action która dodaje plugin
-
+        Method is responsible for the plug-in initialization and for the agent of the _addledz method which adds the plugin
         :return: None
         """
 
@@ -148,11 +146,11 @@ class FieldsClassifier:
 
     def _add_action(self, pathIcon: str, pluginTitle: str, menuTitle: str):
         """
-        Metoda dodaje plugin do Qgisa, jego tytul, ikone, nazwe menu
+        Method adds a plugin to Qgis with title, icon, menu name
 
-        :param pathIcon: str: sciezka do ikony dla pluginu
-        :param pluginTitle: str: tytul dla pluginy
-        :param menuTitle: str: tytul dla menu pluginu
+        :param pathIcon: str: plug-in icon path
+        :param pluginTitle: str: plugin title
+        :param menuTitle: str: menu title
         :return: action , menu
         """
 
@@ -177,35 +175,36 @@ class FieldsClassifier:
 
     def _open(self)->None:
         """
-        Metoda odpowiada za otworzenie okna z folderami w celu wyszukania pliku, po dodaniu warstwa jest w układzie 2180
+        Method is responsible for opening the window with folders to search for a file, after adding the layer is in the selected layout
 
+        :return: None
         """
         crs_box = self._check_crs_in_comboBox()
         crs = QgsCoordinateReferenceSystem.fromEpsgId(int(crs_box[7:]))
         QgsProject.instance().setCrs(crs)
         path: tuple = QFileDialog.getOpenFileName(self.window, 'Otworz', "C:\\", '*.shp')
         if QFileDialog.accepted:
-            self.check_path(path,self.form.lineEdit_5,crs)
+            self._check_path(path, self.form.lineEdit_5, crs)
 
     def _select(self)->None:
         """
-        Metoda odpowiada za zaznaczenie obiektów okręgiem, jeśli nie ma żadnej warstwy pokaże ERROR.
+        The method is responsible for selecting objects with freehand, if there is no layer, it will show ERROR.
         :return: None
         """
-        self._check_is_any_selected_feat()
+
         self.iface.actionSelectFreehand().trigger()
         noLayers: bool = self._check_is_any_active_layer()
         if not noLayers:
+            self._check_is_any_selected_feat()
             self.window.hide()
             layer = self.iface.activeLayer()
             layer.selectionChanged.connect(self._end_select)
 
     def _end_select(self)->None:
         """
-        Metoda odpowiada za aktualizacje tekstu z wartościami po zakończeniu zaznaczania obiektów
-        na podstawie wartości zmiennych w klasi.
-        Metoda uruchamia metody odpowiedzialne za obliczenia i aktualizaje zmiennych w klasie.
-
+        The method is responsible for updating text with values after finishing selecting objects
+        based on the values of the variables in the class.
+        The method runs the computation methods and updates the variables in the class.
         :return: None
         """
         layer = self.iface.activeLayer()
@@ -225,10 +224,9 @@ class FieldsClassifier:
 
     def _count_sum_area(self)->None:
         """
-        Metoda odpowiada za obliczenie sumy powierzchni zaznaczonych obiektów.
-        Metoda aktuzaliuje zmienne w klasie.
+        The method is responsible for calculating the sum of the areas of selected objects.
+        The method updates the variables in the class.
 
-        :param layer: warstwa
         :return: None
         """
         form = self.form
@@ -238,22 +236,45 @@ class FieldsClassifier:
         self._areaFeat = self._expresion_calculator('$area')
         self._sumArea = sum(self._areaFeat)
 
+    def _count_mean(self) -> None:
+        """
+        Method is responsible for calculating the average area of ​​selected objects and updating the variable in the class.
+        :return: None
+        """
+        self._mean = self._sumArea / len(self._areaFeat)
 
-    def _count_classes_in_selected_feat(self):
+    def _count_objects(self) -> None:
+        """
+        Method is responsible for calculating the number of marked objects and updating the text associated with that number
+        :return:None
+        """
+        self.form.lineEdit.setText(str(len(self._areaFeat)))
+
+    def _count_classes_in_selected_feat(self)->None:
+        """
+        The method creates a set with classes and calculates the number of unique classes based on the set
+        :return: None
+        """
         self._uniqueClasses = set(self._expresion_calculator('value'))
         self._numberOfUniqueClasses = len(self._uniqueClasses)
-        print(self._uniqueClasses)
 
-
-    def _count_area_for_unique_class(self):
+    def _count_area_for_unique_class(self)->None:
+        """
+        The method calculates the sum of the areas of each class using the method responsible for creating the list with surfaces after giving expression
+        :return: None
+        """
         for uniqueClass in self._uniqueClasses:
             areaForClass = self._expresion_calculator(f'CASE WHEN "value" LIKE {uniqueClass} THEN $area END')
             self._classesArea[uniqueClass] = (sum(areaForClass)/self._sumArea)*100
 
-
-
-
-    def check_path(self,path:tuple,lineEdit,crs):
+    def _check_path(self,path:tuple,lineEdit,crs)->None:
+        """
+        The method checks if the file is selected if it does not show an error
+        :param path: file path
+        :param lineEdit: line edit responsible for showing a path
+        :param crs: coordinate system
+        :return:
+        """
         if path[0]:
             lineEdit.setText(path[0])
             self.iface.addVectorLayer(path[0], '', 'ogr').setCrs(crs)
@@ -261,10 +282,12 @@ class FieldsClassifier:
             lineEdit.setText('Nie wybrano pliku')
             self.iface.messageBar().pushMessage("ERROR", "Nie wybrano pliku", level=Qgis.Critical, duration=5)
 
-
-
-
-    def _expresion_calculator(self,expression:str):
+    def _expresion_calculator(self,expression:str)->List[float]:
+        """
+        The method responsible for creating a list with surfaces after giving expression
+        :param expression: expression
+        :return: list with areas
+        """
         expression = QgsExpression(expression)
         context = QgsExpressionContext()
         listOfValues = []
@@ -275,30 +298,18 @@ class FieldsClassifier:
                 listOfValues.append(value)
         return listOfValues
 
-
-    def _create_selected_list_of_feat(self):
+    def _create_selected_list_of_feat(self)->None:
+        """
+        The method responsible for creating a list of selected objects
+        :return: None
+        """
         self._check_is_any_active_layer()
         layer = self.iface.activeLayer()
         self._selectedFeat = [feat for feat in layer.selectedFeatures()]
 
-    def _count_mean(self)->None:
-        """
-        Metoda odpowiada za obliczenie średniej powierzchni zaznaczonych obiektów i aktualizacje zmiennej w klasie.
-        :return: None
-        """
-        self._mean = self._sumArea / len(self._areaFeat)
-
-
-    def _count_objects(self)->None:
-        """
-        Metoda odpowiada za obliczenie liczby zaznacoznych obiektów i aktualizacji tekstu związanego z ta liczbą
-        :return:None
-        """
-        self.form.lineEdit.setText(str(len(self._areaFeat)))
-
     def _clean_object(self)->None:
         """
-        Metoda odpowiada za obliczenie liczby zaznaczonych obiektów i aktualizacji tekstu związanego z ta liczbą
+        The method is responsible for clearing all values
         :return: None
         """
         del self._areaFeat[:]
@@ -309,7 +320,7 @@ class FieldsClassifier:
         self.form.lineEdit.setText('0')
         form = self.form
         valuesInText = [form.lineEdit_2, form.lineEdit_3, form.lineEdit_4]
-        #self.form.graphicsView.scene().clear()
+        self.form.graphicsView.scene().clear()
         self._active_widgets(False)
         self._set_text_for_list(valuesInText, "")
         self._sumArea = 0.0
@@ -317,7 +328,7 @@ class FieldsClassifier:
 
     def _refresh_lineEdits(self)->None:
         """
-        Metoda odpowiada za odświeżenie tekstu po zmianie jednostki
+        Method is responsible for refreshing the text after changing the unit
 
         :return: None
         """
@@ -333,18 +344,19 @@ class FieldsClassifier:
                 newValue = values[idx]
                 text.setText(f"{round(newValue, 5)}")
 
-
     def _set_text_for_list(self,lines:list,text:str):
         """
-        Metoda zmiena tekst dla podanych labeli
-     
+        method will change the text for the given labels
+        :param lines: list of lines
+        :param text: text to set
+        :return:
         """
         for line in lines:
             line.setText(text)
 
     def _refresh_area_values(self)->None:
         """
-        Metoda odpowiada za odświeżenie wartości w klasie po zmianie jednostki
+        Method is responsible for refreshing the values in the class after changing the unit
         :return: None
         """
         oldUnit: str = self.form.label_5.text()
@@ -355,35 +367,42 @@ class FieldsClassifier:
             self._sumArea = self._sumArea * newUnit
             self._areaFeat = [feat * newUnit for feat in self._areaFeat]
 
-
-    def _check_is_any_selected_feat(self):
+    def _check_is_any_selected_feat(self)->None:
+        """
+        The method is responsible for removing selected objects before starting the plugin
+        :return: None
+        """
         self._create_selected_list_of_feat()
         if self._selectedFeat:
             self.iface.activeLayer().removeSelection()
 
     def _check_crs_in_comboBox(self)->str:
+        """
+        Method checks which coordinate system has been selected
+        :return: str cordinanate system
+        """
         crs : str = self.form.comboBox_2.currentText()
         return crs
 
     def _check_unit_in_comboBox(self)->None:
         """
-        Metoda odpowiada za sprawdzenie jednostki jaka występuje
-        w comboBoxie odpowiadjącego za jednostki i aktualizacje zmiennej
+        Method is responsible for checking the existing unit
+        in the comboBox responsible for units and variable updates
         :return: None
         """
         self._unit = self.form.comboBox.currentText()
 
     def _check_plot_name_in_comboBox2(self)->None:
         """
-        Metoda odpowiada za sprawdzenie metody jaka występuje w
-        comboBoxie odpowiadjącego za metody wykresy i aktualizacji zmiennej
+        Method is responsible for checking the method that occurs in
+        comboBoxie responsible for the methods of charting and updating the variable
         :return: None
         """
         self._plotName = self.form.comboBox_2.currentText()
 
     def _check_is_any_active_layer(self)->bool:
         """
-        Metoda odpowiada za sprawdzenie czy jest jakakolwiek warstwa w projekcie
+        Method is responsible for checking if there is any layer in the project
 
         :return: bool
         """
@@ -393,7 +412,12 @@ class FieldsClassifier:
             return True
         return False
 
-    def _active_widgets(self,flag=True):
+    def _active_widgets(self,flag : bool=True)->None:
+        """
+        The method enables or disables widgets
+        :param flag: bolean flah
+        :return: None
+        """
         form = self.form
 
         widgets = [form.label,form.label_2,form.label_3,
@@ -407,28 +431,9 @@ class FieldsClassifier:
         for widget in widgets:
             widget.setEnabled(flag)
 
-    def _values_for_one_bar(self, subValue:float)->list:
-        """
-        Metoda odpowiada za przygotowanie danych dla wykresu który zawiera tylko jedną metode wyświetlania
-        :param subValue: float
-        :return: list
-        """
-        return [feat - subValue for feat in self._areaFeat]
-
-    def _values_for_two_bars(self, subValueDict: dict)->tuple:
-        """
-        Metoda odpowiada za przygotowanie danych dla wykresu który zawiera dwie metody wyświetlania
-        :param subValueDict: dict
-        :return: tuple
-        """
-        mean, sigmoid = subValueDict.values()
-        subMean: List[float] = [feat - mean for feat in self._areaFeat]
-        subSig: List[float] = [feat - sigmoid for feat in self._areaFeat]
-        return subMean, subSig
-
     def _plot_bar_chart(self)->None:
         """
-        Metoda odpowiada za wyświetlenie wykresów
+        The method is responsible for creating the chart
         :return: None
         """
         self._refresh_lineEdits()
@@ -442,7 +447,6 @@ class FieldsClassifier:
         values: List[float] = list(self._classesArea.values())
         y_pos = np.arange(1,len(self._classesArea.keys())+1)
 
-        # plt.bar(y_pos, values, align = 'center',alpha=0.5)
         rect = ax.bar(y_pos, values,widthBar)
 
         ax.set_xticks(y_pos)
@@ -464,7 +468,7 @@ class FieldsClassifier:
 
     def run(self)->None:
         """
-        Metoda run odpowiedzialna za przypisanie buttonów do funkcji i działaniu calego pluginu
+        Run method responsible for assigning buttons to functions and the operation of the entire plugin
         :return: None
         """
         self.window = QDialog()
