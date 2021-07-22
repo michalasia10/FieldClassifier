@@ -248,9 +248,8 @@ class FieldsClassifier:
     def _count_area_for_unique_class(self):
         for uniqueClass in self._uniqueClasses:
             areaForClass = self._expresion_calculator(f'CASE WHEN "value" LIKE {uniqueClass} THEN $area END')
-            print('area',uniqueClass,areaForClass)
-            self._classesArea[uniqueClass] = sum(areaForClass)
-        print(self._classesArea)
+            self._classesArea[uniqueClass] = (sum(areaForClass)/self._sumArea)*100
+
 
 
 
@@ -438,17 +437,26 @@ class FieldsClassifier:
 
 
         fig, ax = plt.subplots()
-        widthBar = 0.10
+        widthBar = 0.75
 
         values: List[float] = list(self._classesArea.values())
         y_pos = np.arange(1,len(self._classesArea.keys())+1)
-        plt.bar(y_pos, values, align = 'center',alpha=0.5)
+
+        # plt.bar(y_pos, values, align = 'center',alpha=0.5)
+        rect = ax.bar(y_pos, values,widthBar)
+
         ax.set_xticks(y_pos)
         ax.set_xticklabels(self._classesArea.keys())
         ax.legend()
-        ax.set_title("dupa")
+        ax.set_title("Procentowy udział klasy w sumie powierzchni pól")
 
-        ax.set_ylabel(f"Różnica [{self._unit}]")
+        for re in rect:
+            height = re.get_height()
+            print("h",height)
+            ax.text(re.get_x()+re.get_width()/4., int(height) + 2.5 ,f"{round(height,3)} %")
+
+        ax.set_ylabel(f"% udział klasy")
+        ax.set_ylim([0,100])
         scene = QGraphicsScene()
         canvas = FigureCanvas(fig)
         scene.addWidget(canvas)
