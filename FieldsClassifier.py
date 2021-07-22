@@ -130,8 +130,11 @@ class FieldsClassifier:
         self._sumArea: float = 0.0
         self._mean: float = 0.0
         self._unit: str = "m2"  # default value 'm2'
-        self._areaFeat: list = []  # default value empty list
+        self._areaFeat: List[int] = []  # default value empty list
         self._selectedFeat: list = [] # empty list for feats
+        self._uniqueClasses : set = {}
+        self._numberOfUniqueClasses: int = 0
+        self._classesArea : dict[int : list] = {}
 
 
     def initGui(self) -> None:
@@ -182,8 +185,7 @@ class FieldsClassifier:
         QgsProject.instance().setCrs(crs)
         path: tuple = QFileDialog.getOpenFileName(self.window, 'Otworz', "C:\\", '*.shp')
         if QFileDialog.accepted:
-            self.iface.addVectorLayer(path[0], '', 'ogr').setCrs(crs)
-            self.form.lineEdit_5.setText(path[0])
+            self.check_path(path,self.form.lineEdit_5,crs)
 
     def _select(self)->None:
         """
@@ -191,7 +193,7 @@ class FieldsClassifier:
         :return: None
         """
         self._check_is_any_selected_feat()
-        self.iface.actionSelect().trigger()
+        self.iface.actionSelectFreehand().trigger()
         noLayers: bool = self._check_is_any_active_layer()
         if not noLayers:
             self.window.hide()
@@ -211,10 +213,14 @@ class FieldsClassifier:
         self._create_selected_list_of_feat()
         self._count_sum_area()
         self._count_mean()
+        self._count_classes_in_selected_feat()
         self.form.lineEdit_2.setText(f"{round(self._sumArea, 5)}")
         self.form.lineEdit_3.setText(f"{round(self._mean, 5)}")
+        self.form.lineEdit_4.setText(f"{self._numberOfUniqueClasses}")
         self._count_objects()
         self._active_widgets()
+        self._count_area_for_unique_class()
+
         self.window.show()
 
     def _count_sum_area(self)->None:
@@ -229,15 +235,50 @@ class FieldsClassifier:
         unitName: str = form.comboBox.currentText()
         labels: list = [form.label_5, form.label_6,]
         self._set_text_for_list(labels,unitName)
-        expression = QgsExpression('$area')
+        self._areaFeat = self._expresion_calculator('$area')
+        self._sumArea = sum(self._areaFeat)
+
+
+    def _count_classes_in_selected_feat(self):
+        self._uniqueClasses = set(self._expresion_calculator('value'))
+        self._numberOfUniqueClasses = len(self._uniqueClasses)
+        print(self._uniqueClasses)
+
+
+    def _count_area_for_unique_class(self):
+        for uniqueClass in self._uniqueClasses:
+            areaForClass = self._expresion_calculator(f'CASE WHEN "value" LIKE {uniqueClass} THEN $area END')
+            print('area',uniqueClass,areaForClass)
+            self._classesArea[uniqueClass] = sum(areaForClass)
+        print(self._classesArea)
+
+
+
+    def check_path(self,path:tuple,lineEdit,crs):
+        if path[0]:
+            lineEdit.setText(path[0])
+            self.iface.addVectorLayer(path[0], '', 'ogr').setCrs(crs)
+        else:
+            lineEdit.setText('Nie wybrano pliku')
+            self.iface.messageBar().pushMessage("ERROR", "Nie wybrano pliku", level=Qgis.Critical, duration=5)
+
+
+
+
+    def _expresion_calculator(self,expression:str):
+        expression = QgsExpression(expression)
         context = QgsExpressionContext()
+        listOfValues = []
         for feat in self._selectedFeat:
             context.setFeature(feat)
-            pomiar =expression.evaluate(context)
-            self._sumArea += pomiar
-            self._areaFeat.append(pomiar)
+            value = expression.evaluate(context)
+            if value is not None:
+                listOfValues.append(value)
+        return listOfValues
+
 
     def _create_selected_list_of_feat(self):
+        self._check_is_any_active_layer()
         layer = self.iface.activeLayer()
         self._selectedFeat = [feat for feat in layer.selectedFeatures()]
 
@@ -262,6 +303,10 @@ class FieldsClassifier:
         :return: None
         """
         del self._areaFeat[:]
+        del self._selectedFeat[:]
+        print(self._classesArea)
+        self._classesArea.clear()
+        print(self._classesArea)
         self.form.lineEdit.setText('0')
         form = self.form
         valuesInText = [form.lineEdit_2, form.lineEdit_3, form.lineEdit_4]
@@ -391,38 +436,17 @@ class FieldsClassifier:
         self._check_plot_name_in_comboBox2()
         self._check_unit_in_comboBox()
 
-        plotMethods: dict = {
-            "średnią": self._mean,
-            "odchyleniem": self._sigmoid,
-            "wszystkim":
-                {
-                    "średnia": self._mean,
-                    "odchylenie": self._sigmoid
-                }
-        }
 
         fig, ax = plt.subplots()
-        widthBar = 0.35
+        widthBar = 0.10
 
-        if not isinstance(plotMethods[self._plotName], dict):
-            values: List[float] = self._values_for_one_bar(plotMethods[self._plotName])
-            index = np.arange(len(values))
-            plt.bar(index, values, widthBar, color='red', label=self._plotName)
-            ax.set_xticks(index, str(list(range(len(values)))))
-            ax.legend()
-            ax.set_title(
-                f"Wykres dla różnicy między \npowierzchnią obiektów, a {self._plotName}: {round(plotMethods[self._plotName], 5)} {self._unit}")
-        else:
-            subMean,subSig = self._values_for_two_bars(plotMethods[self._plotName])
-            index = np.arange(len(subMean))
-            rect1 = plt.bar(index, subMean, widthBar, color='red', label='Mean')
-            rect2 = plt.bar(index + widthBar, subSig, widthBar, color='green', label='Sigmoid')
-            ax.set_title(
-                f"Wykres dla różnicy między \npowierzchnią obiektów, a średnią: {round(self._mean, 5)} {self._unit} \n")
-            ax.set_xticks(index + widthBar, str(list((range(len(subMean))))))
-            ax.legend()
-
-            fig.tight_layout()
+        values: List[float] = list(self._classesArea.values())
+        y_pos = np.arange(1,len(self._classesArea.keys())+1)
+        plt.bar(y_pos, values, align = 'center',alpha=0.5)
+        ax.set_xticks(y_pos)
+        ax.set_xticklabels(self._classesArea.keys())
+        ax.legend()
+        ax.set_title("dupa")
 
         ax.set_ylabel(f"Różnica [{self._unit}]")
         scene = QGraphicsScene()
