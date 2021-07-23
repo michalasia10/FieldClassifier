@@ -29,14 +29,6 @@ with importlib.resources.path("FieldsClassifier", "iconPlugin.png") as data_path
     icon_path = str(data_path.absolute())
 
 
-#CRS = {
- #   "2180": ,
-  #  "2177": QgsCoordinateReferenceSystem(2177),
-   # "4326": QgsCoordinateReferenceSystem(4326),
-#}
-
-
-
 class FieldsClassifier:
     """
     PL: Klasa reprezentuje plugin o nazwie LasiaPlugin.
@@ -254,6 +246,7 @@ class FieldsClassifier:
         :return: None
         """
         self._uniqueClasses = set(self._expresion_calculator('value'))
+        print('set',self._uniqueClasses)
         self._numberOfUniqueClasses = len(self._uniqueClasses)
 
     def _count_area_for_unique_class(self)->None:
