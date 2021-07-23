@@ -1,4 +1,4 @@
-##FieldClassifier
+## FieldClassifier
 
 FieldClassifier is a Qgis plugin designed to automate the field classification process based on a source file in * .shp format.
 
