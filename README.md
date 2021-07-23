@@ -11,5 +11,4 @@ The plugin allows you to:
     - average area,
     - number of unique objects,
     - number of selected objects.
-- 
-visualization of the percentage share of each class in the total area of selected objects in the form of a graph
+- visualization of the percentage share of each class in the total area of selected objects in the form of a graph
