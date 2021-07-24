@@ -125,6 +125,7 @@ class FieldsClassifier:
         self._uniqueClasses : set = {} # deafult empty set for classes
         self._numberOfUniqueClasses: int = 0 # deafult 0 number of classes
         self._classesArea : dict[int : list] = {} # deafult empty dict for area
+        self._crs = None
 
     def initGui(self) -> None:
         """
@@ -169,12 +170,10 @@ class FieldsClassifier:
 
         :return: None
         """
-        crs_box = self._check_crs_in_comboBox()
-        crs = QgsCoordinateReferenceSystem.fromEpsgId(int(crs_box[7:]))
-        QgsProject.instance().setCrs(crs)
+        self._check_and_return_crs()
         path: tuple = QFileDialog.getOpenFileName(self.window, 'Otworz', "C:\\", '*.shp')
         if QFileDialog.accepted:
-            self._check_path(path, self.form.lineEdit_5, crs)
+            self._check_path(path, self.form.lineEdit_5, self._crs)
 
     def _select(self)->None:
         """
@@ -311,7 +310,7 @@ class FieldsClassifier:
         self.form.lineEdit.setText('0')
         form = self.form
         valuesInText = [form.lineEdit_2, form.lineEdit_3, form.lineEdit_4]
-        self.form.graphicsView.scene().clear()
+        self.form.graphicsView_2.scene().clear()
         self._active_widgets(False)
         self._set_text_for_list(valuesInText, "")
         self._sumArea = 0.0
@@ -413,14 +412,38 @@ class FieldsClassifier:
 
         widgets = [form.label,form.label_2,form.label_3,
                    form.label_4,form.label_5,form.label_6,
-                   form.label_11,form.label_8,
+                   form.label_11,form.label_10,
                    form.lineEdit_2,form.lineEdit_3,
                    form.lineEdit_4,form.comboBox,form.pushButton_3,
                    form.lineEdit,form.pushButton_5,form.comboBox_2,
-                   form.pushButton]
+                   form.pushButton_6]
 
         for widget in widgets:
             widget.setEnabled(flag)
+
+    def _crs_combobox_view(self):
+        radioButtonYes = self.form.radioButton
+        radioButtonNo = self.form.radioButton_2
+        radios = {
+            radioButtonYes:False,
+            radioButtonNo:True,
+        }
+        crs = self.form.comboBox_2
+        for radio,flag in radios.items():
+            if radio.isChecked():
+                crs.setEnabled(flag)
+
+
+
+    def _check_and_return_crs(self):
+        radioButtonYes = self.form.radioButton
+        if radioButtonYes.isChecked():
+            self._crs = QgsProject.instance().crs()
+        else:
+            crs_box = self._check_crs_in_comboBox()
+            self._crs = QgsCoordinateReferenceSystem.fromEpsgId(int(crs_box[7:]))
+            QgsProject.instance().setCrs(self._crs)
+
 
     def _plot_bar_chart(self)->None:
         """
@@ -455,7 +478,7 @@ class FieldsClassifier:
         scene = QGraphicsScene()
         canvas = FigureCanvas(fig)
         scene.addWidget(canvas)
-        self.form.graphicsView.setScene(scene)
+        self.form.graphicsView_2.setScene(scene)
 
     def run(self)->None:
         """
@@ -468,7 +491,9 @@ class FieldsClassifier:
         self.form.pushButton_4.clicked.connect(self._open)
         self.form.pushButton_2.clicked.connect(self._select)
         self.form.pushButton_3.clicked.connect(self._refresh_lineEdits)
-        self.form.pushButton.clicked.connect(self._plot_bar_chart)
+        self.form.pushButton_6.clicked.connect(self._plot_bar_chart)
         self.form.pushButton_5.clicked.connect(self._clean_object)
         self.form.buttonBox_2.clicked.connect(self.window.close)
+        self.form.radioButton_2.toggled.connect(self._crs_combobox_view)
+        self.form.radioButton.toggled.connect(self._crs_combobox_view)
         self.window.show()
