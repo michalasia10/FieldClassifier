@@ -5,6 +5,7 @@ from qgis.core import *
 from qgis.gui import *
 from qgis.utils import *
 
+
 class FieldCalculator:
 
     def __init__(self, selectedFeat: list):
