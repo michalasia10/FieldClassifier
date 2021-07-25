@@ -1,17 +1,9 @@
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from qgis._core import QgsProject
 from typing import List
-from .form import Ui_Dialog
 from qgis.core import *
 from qgis.gui import *
 from qgis.utils import *
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import numpy as np
-import matplotlib.pyplot as plt
-import json
-import importlib.resources
-
 
 class FieldCalculator:
 
