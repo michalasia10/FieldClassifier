@@ -182,20 +182,21 @@ class FieldsClassifier:
         :return: None
         """
         form = self.form
-        widgetsforclass = [form.label_8,form.label_18,form.lineEdit_6,form.mColorButton,
-            form.label_12,form.label_19,form.lineEdit_7,form.mColorButton_2,
-            form.label_13,form.label_20,form.lineEdit_8,form.mColorButton_3,
-            form.label_14,form.label_21,form.lineEdit_9,form.mColorButton_4,
-            form.label_15,form.label_22,form.lineEdit_10,form.mColorButton_5]
-        del self._areaFeat[:]
-        del self._selectedFeat[:]
-        self._classesArea.clear()
-        self._colors.clear()
-        self._graphLabels.clear()
+        widgetsForClass = [form.label_8, form.label_18, form.lineEdit_6, form.mColorButton,
+                           form.label_12, form.label_19, form.lineEdit_7, form.mColorButton_2,
+                           form.label_13, form.label_20, form.lineEdit_8, form.mColorButton_3,
+                           form.label_14, form.label_21, form.lineEdit_9, form.mColorButton_4,
+                           form.label_15, form.label_22, form.lineEdit_10, form.mColorButton_5]
+        listsToDelete = [self._areaFeat,self._selectedFeat]
+        dictsToDelete = [self._classesArea,self._colors,self._graphLabels]
+        for list in listsToDelete:
+            del list[:]
+        for dic in dictsToDelete:
+            dic.clear()
         self.form.lineEdit.setText('0')
         form = self.form
         valuesInText = [form.lineEdit_2, form.lineEdit_3, form.lineEdit_4]
-        self._active_widgets(widgetsforclass,False)
+        self._active_widgets(widgetsForClass, False)
         self._active_widgets(self._get_default_forms_to_change(),False)
         self._set_text_for_list(valuesInText, "")
         self._sumArea = 0.0
@@ -353,9 +354,11 @@ class FieldsClassifier:
 
         color = ListCreator(self._uniqueClasses,colors)
         color.create_color_dict()
+        self._colors = color.dictForm
         colorList = color.create_list(tuple)
         label = ListCreator(self._uniqueClasses,labels)
         label.create_label_dict()
+        self._graphLabels = label.dictForm
         labelList = label.create_list(str)
         self.graphs = FieldGraphs(self.iface,
                                   self.window,
