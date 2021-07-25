@@ -6,9 +6,6 @@ from .form import Ui_Dialog
 from qgis.core import *
 from qgis.gui import *
 from qgis.utils import *
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import numpy as np
-import matplotlib.pyplot as plt
 import json
 import importlib.resources
 from .FieldGraphs import FieldGraphs
