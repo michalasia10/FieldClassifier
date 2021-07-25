@@ -1,19 +1,16 @@
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from qgis._core import QgsDistanceArea, QgsUnitTypes, QgsProject
+from qgis._core import QgsProject
 from typing import List
-from PyQt5.QtGui import QPen
 from .form import Ui_Dialog
 from qgis.core import *
 from qgis.gui import *
 from qgis.utils import *
-from math import sqrt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import numpy as np
-import matplotlib.pyplot as plt
 import json
 import importlib.resources
-
+from .FieldGraphs import FieldGraphs
+from .FieldCalculator import FieldCalculator
+from .ListCreator import ListCreator
 
 # load json
 with importlib.resources.path("FieldsClassifier", "units.json") as data_path:
@@ -44,6 +41,7 @@ class FieldsClassifier:
         self._crs = None
         self._colors:dict = {}
         self._graphLabels:dict = {}
+        self._numberOfFeat = 0
 
     def initGui(self) -> None:
         """
@@ -93,6 +91,21 @@ class FieldsClassifier:
         if QFileDialog.accepted:
             self._check_path(path, self.form.lineEdit_5, self._crs)
 
+    def _check_path(self, path: tuple, lineEdit, crs) -> None:
+        """
+        The method checks if the file is selected if it does not show an error
+        :param path: file path
+        :param lineEdit: line edit responsible for showing a path
+        :param crs: coordinate system
+        :return:
+        """
+        if path[0]:
+            lineEdit.setText(path[0])
+            self.iface.addVectorLayer(path[0], '', 'ogr').setCrs(crs)
+        else:
+            lineEdit.setText('Nie wybrano pliku')
+            self.iface.messageBar().pushMessage("ERROR", "Nie wybrano pliku", level=Qgis.Critical, duration=5)
+
     def _select(self)->None:
         """
         The method is responsible for selecting objects with freehand, if there is no layer, it will show ERROR.
@@ -115,21 +128,27 @@ class FieldsClassifier:
         The method runs the computation methods and updates the variables in the class.
         :return: None
         """
+        form = self.form
         layer = self.iface.activeLayer()
         layer.selectionChanged.disconnect(self._end_select)
         self._create_selected_list_of_feat()
-        self._count_sum_area()
-        self._count_mean()
-        self._count_classes_in_selected_feat()
+        unitName: str = form.comboBox.currentText()
+        labels: list = [form.label_5, form.label_6, ]
+        self._set_text_for_list(labels, unitName)
+        calculator = FieldCalculator(self._selectedFeat)
+        calculator.count_sum_area()
+        self._sumArea = calculator.sumArea
+        calculator.count_mean()
+        self._mean = calculator.mean
+        self._uniqueClasses,self._numberOfUniqueClasses = calculator.count_classes_in_selected_feat()
+        self._classesArea = calculator.count_area_for_unique_class()
+        self._numberOfFeat = calculator.count_objects()
+        self._write_number_of_objects()
         self.form.lineEdit_2.setText(f"{round(self._sumArea, 5)}")
         self.form.lineEdit_3.setText(f"{round(self._mean, 5)}")
         self.form.lineEdit_4.setText(f"{self._numberOfUniqueClasses}")
-        self._count_objects()
         self._active_widgets(self._get_default_forms_to_change())
         self._active_edit_form_for_classes()
-        self._count_area_for_unique_class()
-
-
         self.window.show()
 
     def _get_default_forms_to_change(self):
@@ -142,83 +161,6 @@ class FieldsClassifier:
                                           self.form.label_16, self.form.label_23, self.form.label_24]
         return defaultWidgetsToActivate
 
-    def _count_sum_area(self)->None:
-        """
-        The method is responsible for calculating the sum of the areas of selected objects.
-        The method updates the variables in the class.
-
-        :return: None
-        """
-        form = self.form
-        unitName: str = form.comboBox.currentText()
-        labels: list = [form.label_5, form.label_6,]
-        self._set_text_for_list(labels,unitName)
-        self._areaFeat = self._expresion_calculator('$area')
-        self._sumArea = sum(self._areaFeat)
-
-    def _count_mean(self) -> None:
-        """
-        Method is responsible for calculating the average area of ​​selected objects and updating the variable in the class.
-        :return: None
-        """
-        self._mean = self._sumArea / len(self._areaFeat)
-
-    def _count_objects(self) -> None:
-        """
-        Method is responsible for calculating the number of marked objects and updating the text associated with that number
-        :return:None
-        """
-        self.form.lineEdit.setText(str(len(self._areaFeat)))
-
-    def _count_classes_in_selected_feat(self)->None:
-        """
-        The method creates a set with classes and calculates the number of unique classes based on the set
-        :return: None
-        """
-        self._uniqueClasses = set(self._expresion_calculator('value'))
-        print('set',self._uniqueClasses)
-        self._numberOfUniqueClasses = len(self._uniqueClasses)
-
-    def _count_area_for_unique_class(self)->None:
-        """
-        The method calculates the sum of the areas of each class using the method responsible for creating the list with surfaces after giving expression
-        :return: None
-        """
-        for uniqueClass in self._uniqueClasses:
-            areaForClass = self._expresion_calculator(f'CASE WHEN "value" LIKE {uniqueClass} THEN $area END')
-            self._classesArea[uniqueClass] = (sum(areaForClass)/self._sumArea)*100
-
-    def _check_path(self,path:tuple,lineEdit,crs)->None:
-        """
-        The method checks if the file is selected if it does not show an error
-        :param path: file path
-        :param lineEdit: line edit responsible for showing a path
-        :param crs: coordinate system
-        :return:
-        """
-        if path[0]:
-            lineEdit.setText(path[0])
-            self.iface.addVectorLayer(path[0], '', 'ogr').setCrs(crs)
-        else:
-            lineEdit.setText('Nie wybrano pliku')
-            self.iface.messageBar().pushMessage("ERROR", "Nie wybrano pliku", level=Qgis.Critical, duration=5)
-
-    def _expresion_calculator(self,expression:str)->List[float]:
-        """
-        The method responsible for creating a list with surfaces after giving expression
-        :param expression: expression
-        :return: list with areas
-        """
-        expression = QgsExpression(expression)
-        context = QgsExpressionContext()
-        listOfValues = []
-        for feat in self._selectedFeat:
-            context.setFeature(feat)
-            value = expression.evaluate(context)
-            if value is not None:
-                listOfValues.append(value)
-        return listOfValues
-
     def _create_selected_list_of_feat(self)->None:
         """
         The method responsible for creating a list of selected objects
@@ -228,28 +170,30 @@ class FieldsClassifier:
         layer = self.iface.activeLayer()
         self._selectedFeat = [feat for feat in layer.selectedFeatures()]
 
+    def _write_number_of_objects(self):
+        self.form.lineEdit.setText(str(self._numberOfFeat))
+
     def _clean_object(self)->None:
         """
         The method is responsible for clearing all values
         :return: None
         """
         form = self.form
-        widgetsforclass = [form.label_8,form.label_18,form.lineEdit_6,form.mColorButton,
-            form.label_12,form.label_19,form.lineEdit_7,form.mColorButton_2,
-            form.label_13,form.label_20,form.lineEdit_8,form.mColorButton_3,
-            form.label_14,form.label_21,form.lineEdit_9,form.mColorButton_4,
-            form.label_15,form.label_22,form.lineEdit_10,form.mColorButton_5]
-        del self._areaFeat[:]
-        del self._selectedFeat[:]
-        print(self._classesArea)
-        self._classesArea.clear()
-        print(self._classesArea)
-        self._colors.clear()
-        self._graphLabels.clear()
+        widgetsForClass = [form.label_8, form.label_18, form.lineEdit_6, form.mColorButton,
+                           form.label_12, form.label_19, form.lineEdit_7, form.mColorButton_2,
+                           form.label_13, form.label_20, form.lineEdit_8, form.mColorButton_3,
+                           form.label_14, form.label_21, form.lineEdit_9, form.mColorButton_4,
+                           form.label_15, form.label_22, form.lineEdit_10, form.mColorButton_5]
+        listsToDelete = [self._areaFeat,self._selectedFeat]
+        dictsToDelete = [self._classesArea,self._colors,self._graphLabels]
+        for list in listsToDelete:
+            del list[:]
+        for dic in dictsToDelete:
+            dic.clear()
         self.form.lineEdit.setText('0')
         form = self.form
         valuesInText = [form.lineEdit_2, form.lineEdit_3, form.lineEdit_4]
-        self._active_widgets(widgetsforclass,False)
+        self._active_widgets(widgetsForClass, False)
         self._active_widgets(self._get_default_forms_to_change(),False)
         self._set_text_for_list(valuesInText, "")
         self._sumArea = 0.0
@@ -332,6 +276,15 @@ class FieldsClassifier:
         """
         self._plotName = self.form.comboBox_2.currentText()
 
+    def _check_and_return_crs(self):
+        radioButtonYes = self.form.radioButton
+        if radioButtonYes.isChecked():
+            self._crs = QgsProject.instance().crs()
+        else:
+            crs_box = self._check_crs_in_comboBox()
+            self._crs = QgsCoordinateReferenceSystem.fromEpsgId(int(crs_box[7:]))
+            QgsProject.instance().setCrs(self._crs)
+
     def _check_is_any_active_layer(self)->bool:
         """
         Method is responsible for checking if there is any layer in the project
@@ -366,43 +319,6 @@ class FieldsClassifier:
         for item in self._uniqueClasses:
             self._active_widgets(widgetsForClass[item])
 
-    def _create_color_dict(self):
-        form = self.form
-        colors = {
-            1:form.mColorButton,
-            2:form.mColorButton_2,
-            3:form.mColorButton_3,
-            4:form.mColorButton_4,
-            5:form.mColorButton_5,
-        }
-        for item in self._uniqueClasses:
-            self._colors[item] = tuple(i/255 for i in colors[item].color().getRgb())
-
-    def _create_color_list(self):
-        self._create_color_dict()
-        return [color for _,color in self._colors.items()]
-
-
-    def _create_label_dict(self):
-        form = self.form
-        labels = {
-            1:form.lineEdit_6,
-            2:form.lineEdit_7,
-            3:form.lineEdit_8,
-            4:form.lineEdit_9,
-            5:form.lineEdit_10,
-        }
-
-        for item in self._uniqueClasses:
-            if labels[item].text() != '':
-                self._graphLabels[item] = labels[item].text()
-            else:
-                self._graphLabels[item] = str(item)
-
-    def _create_label_list(self):
-        self._create_label_dict()
-        return [label for _,label in self._graphLabels.items()]
-
     def _crs_combobox_view(self):
         radioButtonYes = self.form.radioButton
         radioButtonNo = self.form.radioButton_2
@@ -416,62 +332,39 @@ class FieldsClassifier:
                 crs.setEnabled(flag)
 
 
+    def draw_graph(self):
+        form = self.form
+        labels = {
+            1:form.lineEdit_6,
+            2:form.lineEdit_7,
+            3:form.lineEdit_8,
+            4:form.lineEdit_9,
+            5:form.lineEdit_10,
+        }
+        colors = {
+            1: form.mColorButton,
+            2: form.mColorButton_2,
+            3: form.mColorButton_3,
+            4: form.mColorButton_4,
+            5: form.mColorButton_5,
+        }
 
-    def _check_and_return_crs(self):
-        radioButtonYes = self.form.radioButton
-        if radioButtonYes.isChecked():
-            self._crs = QgsProject.instance().crs()
-        else:
-            crs_box = self._check_crs_in_comboBox()
-            self._crs = QgsCoordinateReferenceSystem.fromEpsgId(int(crs_box[7:]))
-            QgsProject.instance().setCrs(self._crs)
+        color = ListCreator(self._uniqueClasses,colors)
+        color.create_color_dict()
+        self._colors = color.dictForm
+        colorList = color.create_list(tuple)
+        label = ListCreator(self._uniqueClasses,labels)
+        label.create_label_dict()
+        self._graphLabels = label.dictForm
+        labelList = label.create_list(str)
+        self.graphs = FieldGraphs(self.iface,
+                                  self.window,
+                                  form)
+        self.graphs.plot_bar_chart(colorList, labelList, self._classesArea, self.form.graphicsView_2)
 
+    def save_graph(self):
+        self.graphs.save(self.form.graphicsView_2)
 
-    def _plot_bar_chart(self)->None:
-        """
-        The method is responsible for creating the chart
-        :return: None
-        """
-        self._refresh_lineEdits()
-        self._check_plot_name_in_comboBox2()
-        self._check_unit_in_comboBox()
-        colors = self._create_color_list()
-        labels = self._create_label_list()
-
-        self.fig, ax = plt.subplots()
-        widthBar = 0.75
-
-        values: List[float] = list(self._classesArea.values())
-        y_pos = np.arange(1,len(self._classesArea.keys())+1)
-
-        rect = ax.bar(y_pos, values,widthBar,color = colors)
-
-        ax.set_xticks(y_pos)
-        ax.set_xticklabels(labels)
-        ax.set_title("Procentowy udział klasy w sumie powierzchni pól")
-
-        for re in rect:
-            height = re.get_height()
-            ax.text(re.get_x()+re.get_width()/4., int(height) + 2.5 ,f"{round(height,3)} %")
-
-        ax.set_ylabel(f"% udział klasy")
-        ax.set_ylim([0,100])
-        self.scene = QGraphicsScene()
-        canvas = FigureCanvas(self.fig)
-        self.scene.addWidget(canvas)
-        self.form.graphicsView_2.setScene(self.scene)
-
-
-    def _save(self):
-        if self.form.graphicsView_2.scene() is None:
-            self.iface.messageBar().pushMessage("ERROR", "Wybierz obiekty i wygeneruj wykres",
-                                                level=Qgis.Critical, duration=15)
-        else:
-            path: tuple = QFileDialog.getSaveFileName(self.window, 'Otworz', "C:\\", '*.jpg')
-            if path[0] == '':
-                self.iface.messageBar().pushMessage("ERROR", "Wybranej ścieżki do zapisu", level=Qgis.Critical, duration=15)
-            else:
-                self.fig.savefig(path[0],format='png')
 
     def run(self)->None:
         """
@@ -484,10 +377,10 @@ class FieldsClassifier:
         self.form.pushButton_4.clicked.connect(self._open)
         self.form.pushButton_2.clicked.connect(self._select)
         self.form.pushButton_3.clicked.connect(self._refresh_lineEdits)
-        self.form.pushButton_6.clicked.connect(self._plot_bar_chart)
         self.form.pushButton_5.clicked.connect(self._clean_object)
         self.form.buttonBox_2.clicked.connect(self.window.close)
         self.form.radioButton_2.toggled.connect(self._crs_combobox_view)
         self.form.radioButton.toggled.connect(self._crs_combobox_view)
-        self.form.pushButton.clicked.connect(self._save)
+        self.form.pushButton.clicked.connect(self.save_graph)
+        self.form.pushButton_6.clicked.connect(self.draw_graph)
         self.window.show()
