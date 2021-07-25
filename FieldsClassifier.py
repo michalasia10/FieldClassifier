@@ -8,9 +8,9 @@ from qgis.gui import *
 from qgis.utils import *
 import json
 import importlib.resources
-from .FieldGraphs import FieldGraphs
-from .FieldCalculator import FieldCalculator
-from .ListCreator import ListCreator
+from .modules.FieldGraphs import FieldGraphs
+from .modules.FieldCalculator import FieldCalculator
+from .modules.ListCreator import ListCreator
 
 # load json
 with importlib.resources.path("FieldsClassifier", "units.json") as data_path:
