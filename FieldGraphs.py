@@ -1,19 +1,12 @@
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from qgis._core import QgsDistanceArea, QgsUnitTypes, QgsProject
-from typing import List, Callable
-from PyQt5.QtGui import QPen
-from .form import Ui_Dialog
+from typing import List
 from qgis.core import *
 from qgis.gui import *
 from qgis.utils import *
-from math import sqrt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 import matplotlib.pyplot as plt
-import json
-import importlib.resources
-
 
 class FieldGraphs(object):
 
