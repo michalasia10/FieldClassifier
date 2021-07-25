@@ -17,27 +17,26 @@ import importlib.resources
 
 class FieldGraphs(object):
 
-    def __init__(self, iface, window, form, colorList: Callable, labelList : Callable, classesArea: dict):
+    def __init__(self, iface, window, form,):
         self.iface = iface
-        self._colorList = colorList
-        self._labelList = labelList
-        self._classesArea: dict = classesArea
         self.form = form
         self.window = window
 
-    def plot_bar_chart(self) -> None:
+
+    def plot_bar_chart(self,colorList: list, labelList : list, classesArea: dict,graphicView) -> None:
         """
         The method is responsible for creating the chart
         :return: None
         """
-        colors = self._colorList()
-        labels = self._labelList()
+        colors = colorList
+        labels = labelList
+        print(colors,labels,classesArea)
 
         self.fig, ax = plt.subplots()
         widthBar = 0.75
 
-        values: List[float] = list(self._classesArea.values())
-        y_pos = np.arange(1, len(self._classesArea.keys()) + 1)
+        values: List[float] = list(classesArea.values())
+        y_pos = np.arange(1, len(classesArea.keys()) + 1)
 
         rect = ax.bar(y_pos, values, widthBar, color=colors)
 
@@ -54,10 +53,10 @@ class FieldGraphs(object):
         self.scene = QGraphicsScene()
         canvas = FigureCanvas(self.fig)
         self.scene.addWidget(canvas)
-        self.form.graphicsView_2.setScene(self.scene)
+        graphicView.setScene(self.scene)
 
-    def save(self):
-        if self.form.graphicsView_2.scene() is None:
+    def save(self,graphicView):
+        if graphicView.scene() is None:
             self.iface.messageBar().pushMessage("ERROR", "Wybierz obiekty i wygeneruj wykres",
                                                 level=Qgis.Critical, duration=15)
         else:

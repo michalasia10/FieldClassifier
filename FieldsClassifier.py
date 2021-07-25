@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import json
 import importlib.resources
 from .FieldGraphs import FieldGraphs
+from .FieldCalculator import FieldCalculator
 
 # load json
 with importlib.resources.path("FieldsClassifier", "units.json") as data_path:
@@ -42,6 +43,7 @@ class FieldsClassifier:
         self._crs = None
         self._colors:dict = {}
         self._graphLabels:dict = {}
+        self._numberOfFeat = 0
 
     def initGui(self) -> None:
         """
@@ -128,21 +130,27 @@ class FieldsClassifier:
         The method runs the computation methods and updates the variables in the class.
         :return: None
         """
+        form = self.form
         layer = self.iface.activeLayer()
         layer.selectionChanged.disconnect(self._end_select)
         self._create_selected_list_of_feat()
-        self._count_sum_area()
-        self._count_mean()
-        self._count_classes_in_selected_feat()
+        unitName: str = form.comboBox.currentText()
+        labels: list = [form.label_5, form.label_6, ]
+        self._set_text_for_list(labels, unitName)
+        calculator = FieldCalculator(self._selectedFeat)
+        calculator.count_sum_area()
+        self._sumArea = calculator.sumArea
+        calculator.count_mean()
+        self._mean = calculator.mean
+        self._uniqueClasses,self._numberOfUniqueClasses = calculator.count_classes_in_selected_feat()
+        self._classesArea = calculator.count_area_for_unique_class()
+        self._numberOfFeat = calculator.count_objects()
+        self._write_number_of_objects()
         self.form.lineEdit_2.setText(f"{round(self._sumArea, 5)}")
         self.form.lineEdit_3.setText(f"{round(self._mean, 5)}")
         self.form.lineEdit_4.setText(f"{self._numberOfUniqueClasses}")
-        self._count_objects()
         self._active_widgets(self._get_default_forms_to_change())
         self._active_edit_form_for_classes()
-        self._count_area_for_unique_class()
-
-
         self.window.show()
 
     def _get_default_forms_to_change(self):
@@ -155,70 +163,6 @@ class FieldsClassifier:
                                           self.form.label_16, self.form.label_23, self.form.label_24]
         return defaultWidgetsToActivate
 
-    def _count_sum_area(self)->None:
-        """
-        The method is responsible for calculating the sum of the areas of selected objects.
-        The method updates the variables in the class.
-
-        :return: None
-        """
-        form = self.form
-        unitName: str = form.comboBox.currentText()
-        labels: list = [form.label_5, form.label_6,]
-        self._set_text_for_list(labels,unitName)
-        self._areaFeat = self._expresion_calculator('$area')
-        self._sumArea = sum(self._areaFeat)
-
-    def _count_mean(self) -> None:
-        """
-        Method is responsible for calculating the average area of ​​selected objects and updating the variable in the class.
-        :return: None
-        """
-        self._mean = self._sumArea / len(self._areaFeat)
-
-    def _count_objects(self) -> None:
-        """
-        Method is responsible for calculating the number of marked objects and updating the text associated with that number
-        :return:None
-        """
-        self.form.lineEdit.setText(str(len(self._areaFeat)))
-
-    def _count_classes_in_selected_feat(self)->None:
-        """
-        The method creates a set with classes and calculates the number of unique classes based on the set
-        :return: None
-        """
-        self._uniqueClasses = set(self._expresion_calculator('value'))
-        print('set',self._uniqueClasses)
-        self._numberOfUniqueClasses = len(self._uniqueClasses)
-
-    def _count_area_for_unique_class(self)->None:
-        """
-        The method calculates the sum of the areas of each class using the method responsible for creating the list with surfaces after giving expression
-        :return: None
-        """
-        for uniqueClass in self._uniqueClasses:
-            areaForClass = self._expresion_calculator(f'CASE WHEN "value" LIKE {uniqueClass} THEN $area END')
-            self._classesArea[uniqueClass] = (sum(areaForClass)/self._sumArea)*100
-
-
-
-    def _expresion_calculator(self,expression:str)->List[float]:
-        """
-        The method responsible for creating a list with surfaces after giving expression
-        :param expression: expression
-        :return: list with areas
-        """
-        expression = QgsExpression(expression)
-        context = QgsExpressionContext()
-        listOfValues = []
-        for feat in self._selectedFeat:
-            context.setFeature(feat)
-            value = expression.evaluate(context)
-            if value is not None:
-                listOfValues.append(value)
-        return listOfValues
-
     def _create_selected_list_of_feat(self)->None:
         """
         The method responsible for creating a list of selected objects
@@ -227,6 +171,9 @@ class FieldsClassifier:
         self._check_is_any_active_layer()
         layer = self.iface.activeLayer()
         self._selectedFeat = [feat for feat in layer.selectedFeatures()]
+
+    def _write_number_of_objects(self):
+        self.form.lineEdit.setText(str(self._numberOfFeat))
 
     def _clean_object(self)->None:
         """
@@ -241,9 +188,7 @@ class FieldsClassifier:
             form.label_15,form.label_22,form.lineEdit_10,form.mColorButton_5]
         del self._areaFeat[:]
         del self._selectedFeat[:]
-        print(self._classesArea)
         self._classesArea.clear()
-        print(self._classesArea)
         self._colors.clear()
         self._graphLabels.clear()
         self.form.lineEdit.setText('0')
@@ -332,6 +277,15 @@ class FieldsClassifier:
         """
         self._plotName = self.form.comboBox_2.currentText()
 
+    def _check_and_return_crs(self):
+        radioButtonYes = self.form.radioButton
+        if radioButtonYes.isChecked():
+            self._crs = QgsProject.instance().crs()
+        else:
+            crs_box = self._check_crs_in_comboBox()
+            self._crs = QgsCoordinateReferenceSystem.fromEpsgId(int(crs_box[7:]))
+            QgsProject.instance().setCrs(self._crs)
+
     def _check_is_any_active_layer(self)->bool:
         """
         Method is responsible for checking if there is any layer in the project
@@ -416,15 +370,14 @@ class FieldsClassifier:
                 crs.setEnabled(flag)
 
 
+    def draw_graph(self):
+        self.graphs = FieldGraphs(self.iface,
+                                  self.window,
+                                  self.form)
+        self.graphs.plot_bar_chart(self._create_color_list(), self._create_label_list(), self._classesArea, self.form.graphicsView_2)
 
-    def _check_and_return_crs(self):
-        radioButtonYes = self.form.radioButton
-        if radioButtonYes.isChecked():
-            self._crs = QgsProject.instance().crs()
-        else:
-            crs_box = self._check_crs_in_comboBox()
-            self._crs = QgsCoordinateReferenceSystem.fromEpsgId(int(crs_box[7:]))
-            QgsProject.instance().setCrs(self._crs)
+    def save_graph(self):
+        self.graphs.save(self.form.graphicsView_2)
 
 
     def run(self)->None:
@@ -435,7 +388,6 @@ class FieldsClassifier:
         self.window = QDialog()
         self.form = Ui_Dialog()
         self.form.setupUi(self.window)
-        self.graphs = FieldGraphs(self.iface,self.window,self.form,self._create_color_list,self._create_label_list,self._classesArea)
         self.form.pushButton_4.clicked.connect(self._open)
         self.form.pushButton_2.clicked.connect(self._select)
         self.form.pushButton_3.clicked.connect(self._refresh_lineEdits)
@@ -443,6 +395,6 @@ class FieldsClassifier:
         self.form.buttonBox_2.clicked.connect(self.window.close)
         self.form.radioButton_2.toggled.connect(self._crs_combobox_view)
         self.form.radioButton.toggled.connect(self._crs_combobox_view)
-        self.form.pushButton.clicked.connect(self.graphs.save)
-        self.form.pushButton_6.clicked.connect(self.graphs.plot_bar_chart)
+        self.form.pushButton.clicked.connect(self.save_graph)
+        self.form.pushButton_6.clicked.connect(self.draw_graph)
         self.window.show()
