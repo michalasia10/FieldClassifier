@@ -1,19 +1,17 @@
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from qgis._core import QgsDistanceArea, QgsUnitTypes, QgsProject
+from qgis._core import QgsProject
 from typing import List
-from PyQt5.QtGui import QPen
 from .form import Ui_Dialog
 from qgis.core import *
 from qgis.gui import *
 from qgis.utils import *
-from math import sqrt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 import matplotlib.pyplot as plt
 import json
 import importlib.resources
-
+from .FieldGraphs import FieldGraphs
 
 # load json
 with importlib.resources.path("FieldsClassifier", "units.json") as data_path:
@@ -92,6 +90,21 @@ class FieldsClassifier:
         path: tuple = QFileDialog.getOpenFileName(self.window, 'Otworz', "C:\\", '*.shp')
         if QFileDialog.accepted:
             self._check_path(path, self.form.lineEdit_5, self._crs)
+
+    def _check_path(self, path: tuple, lineEdit, crs) -> None:
+        """
+        The method checks if the file is selected if it does not show an error
+        :param path: file path
+        :param lineEdit: line edit responsible for showing a path
+        :param crs: coordinate system
+        :return:
+        """
+        if path[0]:
+            lineEdit.setText(path[0])
+            self.iface.addVectorLayer(path[0], '', 'ogr').setCrs(crs)
+        else:
+            lineEdit.setText('Nie wybrano pliku')
+            self.iface.messageBar().pushMessage("ERROR", "Nie wybrano pliku", level=Qgis.Critical, duration=5)
 
     def _select(self)->None:
         """
@@ -188,20 +201,7 @@ class FieldsClassifier:
             areaForClass = self._expresion_calculator(f'CASE WHEN "value" LIKE {uniqueClass} THEN $area END')
             self._classesArea[uniqueClass] = (sum(areaForClass)/self._sumArea)*100
 
-    def _check_path(self,path:tuple,lineEdit,crs)->None:
-        """
-        The method checks if the file is selected if it does not show an error
-        :param path: file path
-        :param lineEdit: line edit responsible for showing a path
-        :param crs: coordinate system
-        :return:
-        """
-        if path[0]:
-            lineEdit.setText(path[0])
-            self.iface.addVectorLayer(path[0], '', 'ogr').setCrs(crs)
-        else:
-            lineEdit.setText('Nie wybrano pliku')
-            self.iface.messageBar().pushMessage("ERROR", "Nie wybrano pliku", level=Qgis.Critical, duration=5)
+
 
     def _expresion_calculator(self,expression:str)->List[float]:
         """
@@ -427,52 +427,6 @@ class FieldsClassifier:
             QgsProject.instance().setCrs(self._crs)
 
 
-    def _plot_bar_chart(self)->None:
-        """
-        The method is responsible for creating the chart
-        :return: None
-        """
-        self._refresh_lineEdits()
-        self._check_plot_name_in_comboBox2()
-        self._check_unit_in_comboBox()
-        colors = self._create_color_list()
-        labels = self._create_label_list()
-
-        self.fig, ax = plt.subplots()
-        widthBar = 0.75
-
-        values: List[float] = list(self._classesArea.values())
-        y_pos = np.arange(1,len(self._classesArea.keys())+1)
-
-        rect = ax.bar(y_pos, values,widthBar,color = colors)
-
-        ax.set_xticks(y_pos)
-        ax.set_xticklabels(labels)
-        ax.set_title("Procentowy udział klasy w sumie powierzchni pól")
-
-        for re in rect:
-            height = re.get_height()
-            ax.text(re.get_x()+re.get_width()/4., int(height) + 2.5 ,f"{round(height,3)} %")
-
-        ax.set_ylabel(f"% udział klasy")
-        ax.set_ylim([0,100])
-        self.scene = QGraphicsScene()
-        canvas = FigureCanvas(self.fig)
-        self.scene.addWidget(canvas)
-        self.form.graphicsView_2.setScene(self.scene)
-
-
-    def _save(self):
-        if self.form.graphicsView_2.scene() is None:
-            self.iface.messageBar().pushMessage("ERROR", "Wybierz obiekty i wygeneruj wykres",
-                                                level=Qgis.Critical, duration=15)
-        else:
-            path: tuple = QFileDialog.getSaveFileName(self.window, 'Otworz', "C:\\", '*.jpg')
-            if path[0] == '':
-                self.iface.messageBar().pushMessage("ERROR", "Wybranej ścieżki do zapisu", level=Qgis.Critical, duration=15)
-            else:
-                self.fig.savefig(path[0],format='png')
-
     def run(self)->None:
         """
         Run method responsible for assigning buttons to functions and the operation of the entire plugin
@@ -481,13 +435,14 @@ class FieldsClassifier:
         self.window = QDialog()
         self.form = Ui_Dialog()
         self.form.setupUi(self.window)
+        self.graphs = FieldGraphs(self.iface,self.window,self.form,self._create_color_list,self._create_label_list,self._classesArea)
         self.form.pushButton_4.clicked.connect(self._open)
         self.form.pushButton_2.clicked.connect(self._select)
         self.form.pushButton_3.clicked.connect(self._refresh_lineEdits)
-        self.form.pushButton_6.clicked.connect(self._plot_bar_chart)
         self.form.pushButton_5.clicked.connect(self._clean_object)
         self.form.buttonBox_2.clicked.connect(self.window.close)
         self.form.radioButton_2.toggled.connect(self._crs_combobox_view)
         self.form.radioButton.toggled.connect(self._crs_combobox_view)
-        self.form.pushButton.clicked.connect(self._save)
+        self.form.pushButton.clicked.connect(self.graphs.save)
+        self.form.pushButton_6.clicked.connect(self.graphs.plot_bar_chart)
         self.window.show()
