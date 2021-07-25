@@ -30,7 +30,6 @@ class FieldGraphs(object):
         """
         colors = colorList
         labels = labelList
-        print(colors,labels,classesArea)
 
         self.fig, ax = plt.subplots()
         widthBar = 0.75

@@ -13,6 +13,7 @@ import json
 import importlib.resources
 from .FieldGraphs import FieldGraphs
 from .FieldCalculator import FieldCalculator
+from .ListCreator import ListCreator
 
 # load json
 with importlib.resources.path("FieldsClassifier", "units.json") as data_path:
@@ -320,43 +321,6 @@ class FieldsClassifier:
         for item in self._uniqueClasses:
             self._active_widgets(widgetsForClass[item])
 
-    def _create_color_dict(self):
-        form = self.form
-        colors = {
-            1:form.mColorButton,
-            2:form.mColorButton_2,
-            3:form.mColorButton_3,
-            4:form.mColorButton_4,
-            5:form.mColorButton_5,
-        }
-        for item in self._uniqueClasses:
-            self._colors[item] = tuple(i/255 for i in colors[item].color().getRgb())
-
-    def _create_color_list(self):
-        self._create_color_dict()
-        return [color for _,color in self._colors.items()]
-
-
-    def _create_label_dict(self):
-        form = self.form
-        labels = {
-            1:form.lineEdit_6,
-            2:form.lineEdit_7,
-            3:form.lineEdit_8,
-            4:form.lineEdit_9,
-            5:form.lineEdit_10,
-        }
-
-        for item in self._uniqueClasses:
-            if labels[item].text() != '':
-                self._graphLabels[item] = labels[item].text()
-            else:
-                self._graphLabels[item] = str(item)
-
-    def _create_label_list(self):
-        self._create_label_dict()
-        return [label for _,label in self._graphLabels.items()]
-
     def _crs_combobox_view(self):
         radioButtonYes = self.form.radioButton
         radioButtonNo = self.form.radioButton_2
@@ -371,10 +335,32 @@ class FieldsClassifier:
 
 
     def draw_graph(self):
+        form = self.form
+        labels = {
+            1:form.lineEdit_6,
+            2:form.lineEdit_7,
+            3:form.lineEdit_8,
+            4:form.lineEdit_9,
+            5:form.lineEdit_10,
+        }
+        colors = {
+            1: form.mColorButton,
+            2: form.mColorButton_2,
+            3: form.mColorButton_3,
+            4: form.mColorButton_4,
+            5: form.mColorButton_5,
+        }
+
+        color = ListCreator(self._uniqueClasses,colors)
+        color.create_color_dict()
+        colorList = color.create_list(tuple)
+        label = ListCreator(self._uniqueClasses,labels)
+        label.create_label_dict()
+        labelList = label.create_list(str)
         self.graphs = FieldGraphs(self.iface,
                                   self.window,
-                                  self.form)
-        self.graphs.plot_bar_chart(self._create_color_list(), self._create_label_list(), self._classesArea, self.form.graphicsView_2)
+                                  form)
+        self.graphs.plot_bar_chart(colorList, labelList, self._classesArea, self.form.graphicsView_2)
 
     def save_graph(self):
         self.graphs.save(self.form.graphicsView_2)
