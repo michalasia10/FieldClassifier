@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(707, 801)
+        Dialog.resize(694, 754)
         self.tabWidget = QtWidgets.QTabWidget(Dialog)
         self.tabWidget.setGeometry(QtCore.QRect(20, 50, 661, 881))
         self.tabWidget.setObjectName("tabWidget")
@@ -130,7 +130,7 @@ class Ui_Dialog(object):
         self.line_7.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line_7.setObjectName("line_7")
         self.buttonBox_2 = QtWidgets.QDialogButtonBox(self.tab_2)
-        self.buttonBox_2.setGeometry(QtCore.QRect(420, 820, 156, 23))
+        self.buttonBox_2.setGeometry(QtCore.QRect(440, 520, 156, 23))
         self.buttonBox_2.setAutoFillBackground(True)
         self.buttonBox_2.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox_2.setObjectName("buttonBox_2")
@@ -422,6 +422,9 @@ class Ui_Dialog(object):
         self.pushButton_6.setEnabled(False)
         self.pushButton_6.setGeometry(QtCore.QRect(510, 30, 75, 23))
         self.pushButton_6.setObjectName("pushButton_6")
+        self.pushButton = QtWidgets.QPushButton(self.tab)
+        self.pushButton.setGeometry(QtCore.QRect(560, 650, 81, 23))
+        self.pushButton.setObjectName("pushButton")
         self.tabWidget.addTab(self.tab, "")
 
         self.retranslateUi(Dialog)
@@ -471,5 +474,6 @@ class Ui_Dialog(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("Dialog", "Statystki"))
         self.label_10.setText(_translate("Dialog", "Legenda z % udziału klasy w sumie powierzchni zaznaczonych obiektów"))
         self.pushButton_6.setText(_translate("Dialog", "Rysuj"))
+        self.pushButton.setText(_translate("Dialog", "Zapisz jako"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("Dialog", "Wykres"))
 from qgscolorbutton import QgsColorButton

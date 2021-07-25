@@ -42,6 +42,8 @@ class FieldsClassifier:
         self._numberOfUniqueClasses: int = 0 # deafult 0 number of classes
         self._classesArea : dict[int : list] = {} # deafult empty dict for area
         self._crs = None
+        self._colors:dict = {}
+        self._graphLabels:dict = {}
 
     def initGui(self) -> None:
         """
@@ -96,7 +98,7 @@ class FieldsClassifier:
         The method is responsible for selecting objects with freehand, if there is no layer, it will show ERROR.
         :return: None
         """
-
+        self._clean_object()
         self.iface.actionSelectFreehand().trigger()
         noLayers: bool = self._check_is_any_active_layer()
         if not noLayers:
@@ -104,6 +106,7 @@ class FieldsClassifier:
             self.window.hide()
             layer = self.iface.activeLayer()
             layer.selectionChanged.connect(self._end_select)
+
 
     def _end_select(self)->None:
         """
@@ -125,6 +128,7 @@ class FieldsClassifier:
         self._active_widgets(self._get_default_forms_to_change())
         self._active_edit_form_for_classes()
         self._count_area_for_unique_class()
+
 
         self.window.show()
 
@@ -229,19 +233,30 @@ class FieldsClassifier:
         The method is responsible for clearing all values
         :return: None
         """
+        form = self.form
+        widgetsforclass = [form.label_8,form.label_18,form.lineEdit_6,form.mColorButton,
+            form.label_12,form.label_19,form.lineEdit_7,form.mColorButton_2,
+            form.label_13,form.label_20,form.lineEdit_8,form.mColorButton_3,
+            form.label_14,form.label_21,form.lineEdit_9,form.mColorButton_4,
+            form.label_15,form.label_22,form.lineEdit_10,form.mColorButton_5]
         del self._areaFeat[:]
         del self._selectedFeat[:]
         print(self._classesArea)
         self._classesArea.clear()
         print(self._classesArea)
+        self._colors.clear()
+        self._graphLabels.clear()
         self.form.lineEdit.setText('0')
         form = self.form
         valuesInText = [form.lineEdit_2, form.lineEdit_3, form.lineEdit_4]
-        self.form.graphicsView_2.scene().clear()
+        self._active_widgets(widgetsforclass,False)
         self._active_widgets(self._get_default_forms_to_change(),False)
         self._set_text_for_list(valuesInText, "")
         self._sumArea = 0.0
         self._check_is_any_selected_feat()
+        scene = self.form.graphicsView_2
+        if scene.scene() is not None:
+            self.form.graphicsView_2.scene().clear()
 
     def _refresh_lineEdits(self)->None:
         """
@@ -351,6 +366,43 @@ class FieldsClassifier:
         for item in self._uniqueClasses:
             self._active_widgets(widgetsForClass[item])
 
+    def _create_color_dict(self):
+        form = self.form
+        colors = {
+            1:form.mColorButton,
+            2:form.mColorButton_2,
+            3:form.mColorButton_3,
+            4:form.mColorButton_4,
+            5:form.mColorButton_5,
+        }
+        for item in self._uniqueClasses:
+            self._colors[item] = tuple(i/255 for i in colors[item].color().getRgb())
+
+    def _create_color_list(self):
+        self._create_color_dict()
+        return [color for _,color in self._colors.items()]
+
+
+    def _create_label_dict(self):
+        form = self.form
+        labels = {
+            1:form.lineEdit_6,
+            2:form.lineEdit_7,
+            3:form.lineEdit_8,
+            4:form.lineEdit_9,
+            5:form.lineEdit_10,
+        }
+
+        for item in self._uniqueClasses:
+            if labels[item].text() != '':
+                self._graphLabels[item] = labels[item].text()
+            else:
+                self._graphLabels[item] = str(item)
+
+    def _create_label_list(self):
+        self._create_label_dict()
+        return [label for _,label in self._graphLabels.items()]
+
     def _crs_combobox_view(self):
         radioButtonYes = self.form.radioButton
         radioButtonNo = self.form.radioButton_2
@@ -383,32 +435,43 @@ class FieldsClassifier:
         self._refresh_lineEdits()
         self._check_plot_name_in_comboBox2()
         self._check_unit_in_comboBox()
+        colors = self._create_color_list()
+        labels = self._create_label_list()
 
-
-        fig, ax = plt.subplots()
+        self.fig, ax = plt.subplots()
         widthBar = 0.75
 
         values: List[float] = list(self._classesArea.values())
         y_pos = np.arange(1,len(self._classesArea.keys())+1)
 
-        rect = ax.bar(y_pos, values,widthBar)
+        rect = ax.bar(y_pos, values,widthBar,color = colors)
 
         ax.set_xticks(y_pos)
-        ax.set_xticklabels(self._classesArea.keys())
-        ax.legend()
+        ax.set_xticklabels(labels)
         ax.set_title("Procentowy udział klasy w sumie powierzchni pól")
 
         for re in rect:
             height = re.get_height()
-            print("h",height)
             ax.text(re.get_x()+re.get_width()/4., int(height) + 2.5 ,f"{round(height,3)} %")
 
         ax.set_ylabel(f"% udział klasy")
         ax.set_ylim([0,100])
-        scene = QGraphicsScene()
-        canvas = FigureCanvas(fig)
-        scene.addWidget(canvas)
-        self.form.graphicsView_2.setScene(scene)
+        self.scene = QGraphicsScene()
+        canvas = FigureCanvas(self.fig)
+        self.scene.addWidget(canvas)
+        self.form.graphicsView_2.setScene(self.scene)
+
+
+    def _save(self):
+        if self.form.graphicsView_2.scene() is None:
+            self.iface.messageBar().pushMessage("ERROR", "Wybierz obiekty i wygeneruj wykres",
+                                                level=Qgis.Critical, duration=15)
+        else:
+            path: tuple = QFileDialog.getSaveFileName(self.window, 'Otworz', "C:\\", '*.jpg')
+            if path[0] == '':
+                self.iface.messageBar().pushMessage("ERROR", "Wybranej ścieżki do zapisu", level=Qgis.Critical, duration=15)
+            else:
+                self.fig.savefig(path[0],format='png')
 
     def run(self)->None:
         """
@@ -426,4 +489,5 @@ class FieldsClassifier:
         self.form.buttonBox_2.clicked.connect(self.window.close)
         self.form.radioButton_2.toggled.connect(self._crs_combobox_view)
         self.form.radioButton.toggled.connect(self._crs_combobox_view)
+        self.form.pushButton.clicked.connect(self._save)
         self.window.show()

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>707</width>
-    <height>801</height>
+    <width>694</width>
+    <height>754</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -367,8 +367,8 @@
     <widget class="QDialogButtonBox" name="buttonBox_2">
      <property name="geometry">
       <rect>
-       <x>420</x>
-       <y>820</y>
+       <x>440</x>
+       <y>520</y>
        <width>156</width>
        <height>23</height>
       </rect>
@@ -1283,6 +1283,19 @@
      </property>
      <property name="text">
       <string>Rysuj</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton">
+     <property name="geometry">
+      <rect>
+       <x>560</x>
+       <y>650</y>
+       <width>81</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Zapisz jako</string>
      </property>
     </widget>
    </widget>
