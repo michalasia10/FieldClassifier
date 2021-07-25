@@ -122,10 +122,21 @@ class FieldsClassifier:
         self.form.lineEdit_3.setText(f"{round(self._mean, 5)}")
         self.form.lineEdit_4.setText(f"{self._numberOfUniqueClasses}")
         self._count_objects()
-        self._active_widgets()
+        self._active_widgets(self._get_default_forms_to_change())
+        self._active_edit_form_for_classes()
         self._count_area_for_unique_class()
 
         self.window.show()
+
+    def _get_default_forms_to_change(self):
+        defaultWidgetsToActivate = [self.form.label, self.form.label_2, self.form.label_3,
+                                          self.form.label_4, self.form.label_5, self.form.label_6,
+                                          self.form.label_11, self.form.label_10, self.form.lineEdit_2,
+                                          self.form.lineEdit_3, self.form.lineEdit_4, self.form.comboBox,
+                                          self.form.pushButton_3, self.form.lineEdit, self.form.pushButton_5,
+                                          self.form.pushButton_6, self.form.label_17,
+                                          self.form.label_16, self.form.label_23, self.form.label_24]
+        return defaultWidgetsToActivate
 
     def _count_sum_area(self)->None:
         """
@@ -227,7 +238,7 @@ class FieldsClassifier:
         form = self.form
         valuesInText = [form.lineEdit_2, form.lineEdit_3, form.lineEdit_4]
         self.form.graphicsView_2.scene().clear()
-        self._active_widgets(False)
+        self._active_widgets(self._get_default_forms_to_change(),False)
         self._set_text_for_list(valuesInText, "")
         self._sumArea = 0.0
         self._check_is_any_selected_feat()
@@ -318,24 +329,27 @@ class FieldsClassifier:
             return True
         return False
 
-    def _active_widgets(self,flag : bool=True)->None:
+    def _active_widgets(self,widgets : list,flag : bool=True,)->None:
         """
         The method enables or disables widgets
         :param flag: bolean flah
         :return: None
         """
-        form = self.form
-
-        widgets = [form.label,form.label_2,form.label_3,
-                   form.label_4,form.label_5,form.label_6,
-                   form.label_11,form.label_10,
-                   form.lineEdit_2,form.lineEdit_3,
-                   form.lineEdit_4,form.comboBox,form.pushButton_3,
-                   form.lineEdit,form.pushButton_5,form.comboBox_2,
-                   form.pushButton_6]
-
         for widget in widgets:
             widget.setEnabled(flag)
+
+    def _active_edit_form_for_classes(self):
+        form = self.form
+        widgetsForClass = {
+            1:[form.label_8,form.label_18,form.lineEdit_6,form.mColorButton],
+            2:[form.label_12,form.label_19,form.lineEdit_7,form.mColorButton_2],
+            3:[form.label_13,form.label_20,form.lineEdit_8,form.mColorButton_3],
+            4:[form.label_14,form.label_21,form.lineEdit_9,form.mColorButton_4],
+            5:[form.label_15,form.label_22,form.lineEdit_10,form.mColorButton_5],
+
+        }
+        for item in self._uniqueClasses:
+            self._active_widgets(widgetsForClass[item])
 
     def _crs_combobox_view(self):
         radioButtonYes = self.form.radioButton
