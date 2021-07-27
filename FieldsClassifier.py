@@ -6,11 +6,9 @@ from .form import Ui_Dialog
 from qgis.core import *
 from qgis.gui import *
 from qgis.utils import *
-import json
 import importlib.resources
 from .modules.FieldGraphs import FieldGraphs
 from .modules.FieldCalculator import FieldCalculator
-from .modules.ListCreator import ListCreator
 from .modules.ErrosMessage import ErrorMessage
 from .modules.AreaConverter import AreaConverter
 
@@ -321,19 +319,14 @@ class FieldsClassifier:
             4: form.mColorButton_4,
             5: form.mColorButton_5,
         }
-
-        color = ListCreator(self._uniqueClasses, colors)
-        color.create_color_dict()
-        self._colors = color.dictForm
-        colorList = color.create_list(tuple)
-        label = ListCreator(self._uniqueClasses, labels)
-        label.create_label_dict()
-        self._graphLabels = label.dictForm
-        labelList = label.create_list(str)
         self.graphs = FieldGraphs(self.iface,
                                   self.window,
-                                  form)
-        self.graphs.plot_bar_chart(colorList, labelList, self._classesArea, self.form.graphicsView_2)
+                                  self.form,
+                                  self._uniqueClasses,
+                                  colors,
+                                  labels,
+                                  self._classesArea,
+                                  self.form.graphicsView_2)
 
     def save_graph(self):
         self.graphs.save(self.form.graphicsView_2)

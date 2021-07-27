@@ -8,29 +8,39 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 import matplotlib.pyplot as plt
 from .ErrosMessage import ErrorMessage
-
+from .ListCreator import ListCreator
 
 class FieldGraphs(object):
 
-    def __init__(self, iface, window, form,):
+    def __init__(self, iface, window, form,uniqueClasses,colorDict,labelDict,classesArea,graphicView):
         self._iface = iface
         self.form = form
         self.window = window
+        self._colorDict = colorDict
+        self._labelDict = labelDict
+        self._classesArea = classesArea
+        self._graphicView = graphicView
+        self._uniqueClasses = uniqueClasses
+        self.plot_bar_chart()
 
-
-    def plot_bar_chart(self,colorList: list, labelList : list, classesArea: dict,graphicView) -> None:
+    def plot_bar_chart(self) -> None:
         """
         The method is responsible for creating the chart
         :return: None
         """
-        colors = colorList
-        labels = labelList
+
+        colors = ListCreator(self._uniqueClasses,self._colorDict)
+        colors.create_color_dict()
+        colors = colors.create_list(tuple)
+        labels = ListCreator(self._uniqueClasses,self._labelDict)
+        labels.create_label_dict()
+        labels = labels.create_list(str)
 
         self.fig, ax = plt.subplots()
         widthBar = 0.75
 
-        values: List[float] = list(classesArea.values())
-        y_pos = np.arange(1, len(classesArea.keys()) + 1)
+        values: List[float] = list(self._classesArea.values())
+        y_pos = np.arange(1, len(self._classesArea.keys()) + 1)
 
         rect = ax.bar(y_pos, values, widthBar, color=colors)
 
@@ -47,7 +57,7 @@ class FieldGraphs(object):
         self.scene = QGraphicsScene()
         canvas = FigureCanvas(self.fig)
         self.scene.addWidget(canvas)
-        graphicView.setScene(self.scene)
+        self._graphicView.setScene(self.scene)
 
     def save(self,graphicView):
         if graphicView.scene() is None:
