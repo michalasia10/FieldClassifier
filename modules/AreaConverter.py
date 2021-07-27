@@ -26,8 +26,8 @@ class AreaConverter:
         self._oldUnit: str = oldUnit.text()
         self._mean: float = mean
         self._sumArea: float = sumArea
-        self._unitLabels = unitLabels
-        self._valuesLabels = valuesLabels
+        self._unitLabels: list = unitLabels
+        self._valuesLabels: list = valuesLabels
 
     @property
     def mean(self):
