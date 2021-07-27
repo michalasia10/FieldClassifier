@@ -7,12 +7,13 @@ from qgis.utils import *
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 import matplotlib.pyplot as plt
+from .ErrosMessage import ErrorMessage
 
 
 class FieldGraphs(object):
 
     def __init__(self, iface, window, form,):
-        self.iface = iface
+        self._iface = iface
         self.form = form
         self.window = window
 
@@ -50,12 +51,11 @@ class FieldGraphs(object):
 
     def save(self,graphicView):
         if graphicView.scene() is None:
-            self.iface.messageBar().pushMessage("ERROR", "Wybierz obiekty i wygeneruj wykres",
-                                                level=Qgis.Critical, duration=15)
+            ErrorMessage(self._iface,0,'Wybierz obiekty i wegenruj wykres',15,0)
         else:
             path: tuple = QFileDialog.getSaveFileName(self.window, 'Otworz', "C:\\", '*.jpg')
             if path[0] == '':
-                self.iface.messageBar().pushMessage("ERROR", "Wybranej ścieżki do zapisu", level=Qgis.Critical,
-                                                    duration=15)
+                ErrorMessage(self._iface, 1,'Brak wybranej ścieżki do zapisu',15,1)
             else:
                 self.fig.savefig(path[0], format='png')
+                ErrorMessage(self._iface, 3, "Legenda zapisana poprawnie", 10, 3)
