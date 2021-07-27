@@ -1,10 +1,10 @@
 [general]
 name=FieldsClassifier
-description= Wtyczka utworzona na potrzeby zajęć PwSGIS
-about= Wtyczka odpowiadająca za obliczenia 3 statystyk ( suma powierzchni, średnia, odchylenie standardowe ) wybranych obiektów na warstwie wektorowej o rozszerzeniu *.shp.Plugin pozwala również obliczyć liczbe obiektów oraz zobrazować obliczone statystyki.
-version=1.1
+description= Wtyczka na potrzeby automatyzacji procesu klasyfikacji gleby
+about= Wtyczka pozwala na : wgranie warstwy, obliczenie ( sumy powierzchni wybranych obiektów, średnią powierzchnie, ilość unikalnych obiektów, liczbę wybranych obiektów ), wizualizacje udziału procentowego poszczególnych klas w łącznym obszarze wybranych obiektów w postaci wykresu.
+version=1.5
 qgisMinimumVersion=3.0
 author=Michał Lasia
-email=Metoda odpowiada za wyświetlenie wykresów
-repository=https://github.com/michalasia10/LasiaPlugin
+email=michal.lasia3@gmail.com
+repository=https://github.com/michalasia10/FieldClassifier
 icon=icon.png
