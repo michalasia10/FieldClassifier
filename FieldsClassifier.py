@@ -135,18 +135,18 @@ class FieldsClassifier:
         unitName: str = form.comboBox.currentText()
         labels: list = [form.label_5, form.label_6, ]
         self._set_text_for_list(labels, unitName)
+
         calculator = FieldCalculator(self._selectedFeat)
-        calculator.count_sum_area()
+        calculator.count_all_values()
         self._sumArea = calculator.sumArea
-        calculator.count_mean()
         self._mean = calculator.mean
-        self._uniqueClasses,self._numberOfUniqueClasses = calculator.count_classes_in_selected_feat()
-        self._classesArea = calculator.count_area_for_unique_class()
-        self._numberOfFeat = calculator.count_objects()
-        self._write_number_of_objects()
-        self.form.lineEdit_2.setText(f"{round(self._sumArea, 5)}")
-        self.form.lineEdit_3.setText(f"{round(self._mean, 5)}")
-        self.form.lineEdit_4.setText(f"{self._numberOfUniqueClasses}")
+        self._uniqueClasses = calculator._uniqueClasses
+        self._numberOfUniqueClasses = calculator.numberOfUniqueClasses
+        self._classesArea = calculator._classesArea
+        self._numberOfFeat = calculator.numberOfFeat
+        fields = [(form.lineEdit,0),(form.lineEdit_2,5),(form.lineEdit_3,5),(form.lineEdit_4,0)]
+        calculator.set_text_for_fields(fields)
+
         self._active_widgets(self._get_default_forms_to_change())
         self._active_edit_form_for_classes()
         self.window.show()
