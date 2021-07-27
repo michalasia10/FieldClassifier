@@ -11,6 +11,7 @@ import importlib.resources
 from .modules.FieldGraphs import FieldGraphs
 from .modules.FieldCalculator import FieldCalculator
 from .modules.ListCreator import ListCreator
+from .modules.ErrosMessage import ErrorMessage
 
 # load json
 with importlib.resources.path("FieldsClassifier", "units.json") as data_path:
@@ -69,7 +70,6 @@ class FieldsClassifier:
         menuBar = self.iface.mainWindow().menuBar()
         menuBar.addAction(menu.menuAction())
         action.triggered.connect(self.run)
-        self.iface.messageBar().pushMessage("ERROR", f"{pathIcon}", level=Qgis.Critical, duration=5)
         return action, menu
 
     def unload(self) -> None:
@@ -102,19 +102,20 @@ class FieldsClassifier:
         if path[0]:
             lineEdit.setText(path[0])
             self.iface.addVectorLayer(path[0], '', 'ogr').setCrs(crs)
+            ErrorMessage(self.iface,3,f"Wgrano poprawnie plik",5,3)
         else:
             lineEdit.setText('Nie wybrano pliku')
-            self.iface.messageBar().pushMessage("ERROR", "Nie wybrano pliku", level=Qgis.Critical, duration=5)
+            ErrorMessage(self.iface,2,"Nie wybrano pliku", 5, 2)
 
     def _select(self)->None:
         """
         The method is responsible for selecting objects with freehand, if there is no layer, it will show ERROR.
         :return: None
         """
-        self._clean_object()
         self.iface.actionSelectFreehand().trigger()
         noLayers: bool = self._check_is_any_active_layer()
         if not noLayers:
+            self._clean_object()
             self._check_is_any_selected_feat()
             self.window.hide()
             layer = self.iface.activeLayer()
@@ -293,7 +294,7 @@ class FieldsClassifier:
         """
         layerList:bool = any([lyr for lyr in QgsProject.instance().mapLayers().values()])
         if not layerList:
-            self.iface.messageBar().pushMessage("ERROR", "Brak warstwy z obiektami", level=Qgis.Critical, duration=5)
+            ErrorMessage(self.iface,2,"Brak warstwy z obiektami",10,2)
             return True
         return False
 
