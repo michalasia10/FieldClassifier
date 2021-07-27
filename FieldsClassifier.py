@@ -12,6 +12,7 @@ from .modules.FieldGraphs import FieldGraphs
 from .modules.FieldCalculator import FieldCalculator
 from .modules.ListCreator import ListCreator
 from .modules.ErrosMessage import ErrorMessage
+from .modules.AreaConverter import AreaConverter
 
 # load json
 with importlib.resources.path("FieldsClassifier", "units.json") as data_path:
