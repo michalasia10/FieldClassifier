@@ -14,13 +14,6 @@ from .modules.ListCreator import ListCreator
 from .modules.ErrosMessage import ErrorMessage
 from .modules.AreaConverter import AreaConverter
 
-# load json
-with importlib.resources.path("FieldsClassifier", "units.json") as data_path:
-    with open(data_path) as f:
-        UNITS_JSON = json.load(f)
-
-# load units to convert from json
-CONVERT_UNITS = UNITS_JSON["convert_units"]
 
 # load icon
 with importlib.resources.path("FieldsClassifier", "iconPlugin.png") as data_path:
