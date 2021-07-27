@@ -204,23 +204,27 @@ class FieldsClassifier:
         if scene.scene() is not None:
             self.form.graphicsView_2.scene().clear()
 
-    def _refresh_lineEdits(self)->None:
+    def _convert(self)->None:
         """
         Method is responsible for refreshing the text after changing the unit
 
         :return: None
         """
         form = self.form
-        self._check_unit_in_comboBox()
-        self._refresh_area_values()
-        if self._unit != self.form.label_5.text():
-            labels: list = [form.label_5, form.label_6]
-            self._set_text_for_list(labels, self._unit)
-            valuesInText: list = [form.lineEdit_2, form.lineEdit_3]
-            values: list = [self._sumArea, self._mean]
-            for idx, text in enumerate(valuesInText):
-                newValue = values[idx]
-                text.setText(f"{round(newValue, 5)}")
+        unitLabels = [form.label_5,form.label_6]
+        valuesLabels = [form.lineEdit_2,form.lineEdit_3]
+
+        converter = AreaConverter(self.iface,
+                                  form,
+                                  form.comboBox.currentText(),
+                                  form.label_5.text(),
+                                  self._mean,
+                                  self._sumArea,
+                                  unitLabels,
+                                  valuesLabels)
+        converter.convert()
+        self._mean = converter.mean
+        self._sumArea = converter.sumMean
 
     def _set_text_for_list(self,lines:list,text:str):
         """
@@ -231,19 +235,6 @@ class FieldsClassifier:
         """
         for line in lines:
             line.setText(text)
-
-    def _refresh_area_values(self)->None:
-        """
-        Method is responsible for refreshing the values in the class after changing the unit
-        :return: None
-        """
-        oldUnit: str = self.form.label_5.text()
-        self._check_unit_in_comboBox()
-        if self._unit != self.form.label_5.text():
-            newUnit = CONVERT_UNITS[oldUnit][self._unit]
-            self._mean = self._mean * newUnit
-            self._sumArea = self._sumArea * newUnit
-            self._areaFeat = [feat * newUnit for feat in self._areaFeat]
 
     def _check_is_any_selected_feat(self)->None:
         """
@@ -261,22 +252,6 @@ class FieldsClassifier:
         """
         crs : str = self.form.comboBox_2.currentText()
         return crs
-
-    def _check_unit_in_comboBox(self)->None:
-        """
-        Method is responsible for checking the existing unit
-        in the comboBox responsible for units and variable updates
-        :return: None
-        """
-        self._unit = self.form.comboBox.currentText()
-
-    def _check_plot_name_in_comboBox2(self)->None:
-        """
-        Method is responsible for checking the method that occurs in
-        comboBoxie responsible for the methods of charting and updating the variable
-        :return: None
-        """
-        self._plotName = self.form.comboBox_2.currentText()
 
     def _check_and_return_crs(self):
         radioButtonYes = self.form.radioButton
@@ -378,7 +353,7 @@ class FieldsClassifier:
         self.form.setupUi(self.window)
         self.form.pushButton_4.clicked.connect(self._open)
         self.form.pushButton_2.clicked.connect(self._select)
-        self.form.pushButton_3.clicked.connect(self._refresh_lineEdits)
+        self.form.pushButton_3.clicked.connect(self._convert)
         self.form.pushButton_5.clicked.connect(self._clean_object)
         self.form.buttonBox_2.clicked.connect(self.window.close)
         self.form.radioButton_2.toggled.connect(self._crs_combobox_view)

@@ -30,6 +30,13 @@ class AreaConverter:
         self._unitLabels = unitLabels
         self._valuesLabels = valuesLabels
 
+    @property
+    def mean(self):
+        return self._mean
+
+    @property
+    def sumMean(self):
+        return self._sumArea
 
     def convert(self)->None:
         """
