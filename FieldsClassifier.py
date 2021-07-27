@@ -133,11 +133,16 @@ class FieldsClassifier:
         form = self.form
         layer = self.iface.activeLayer()
         layer.selectionChanged.disconnect(self._end_select)
+
+        # create list of features
         self._create_selected_list_of_feat()
+
+        # set unit for selected objects
         unitName: str = form.comboBox.currentText()
         labels: list = [form.label_5, form.label_6, ]
         self._set_text_for_list(labels, unitName)
 
+        # init class to count all vars
         calculator = FieldCalculator(self._selectedFeat)
         calculator.count_all_values()
         self._sumArea = calculator.sumArea
@@ -146,10 +151,15 @@ class FieldsClassifier:
         self._numberOfUniqueClasses = calculator.numberOfUniqueClasses
         self._classesArea = calculator._classesArea
         self._numberOfFeat = calculator.numberOfFeat
+
+        #set values in form
         fields = [(form.lineEdit,0),(form.lineEdit_2,5),(form.lineEdit_3,5),(form.lineEdit_4,0)]
         calculator.set_text_for_fields(fields)
 
+        # active default widgets
         self._active_widgets(self._get_default_forms_to_change())
+
+        # active widgets only for class from selected feat
         self._active_edit_form_for_classes()
         self.window.show()
 
