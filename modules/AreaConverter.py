@@ -28,6 +28,7 @@ class AreaConverter:
         self._sumArea: float = sumArea
         self._unitLabels: list = unitLabels
         self._valuesLabels: list = valuesLabels
+        self.convert()
 
     @property
     def mean(self):

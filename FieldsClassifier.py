@@ -218,7 +218,6 @@ class FieldsClassifier:
                                   self._sumArea,
                                   unitLabels,
                                   valuesLabels)
-        converter.convert()
         self._mean = converter.mean
         self._sumArea = converter.sumMean
 
@@ -329,7 +328,7 @@ class FieldsClassifier:
                                   self.form.graphicsView_2)
 
     def save_graph(self):
-        self.graphs.save(self.form.graphicsView_2)
+        self.graphs.save()
 
     def run(self) -> None:
         """

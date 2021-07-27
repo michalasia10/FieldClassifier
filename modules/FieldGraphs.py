@@ -59,8 +59,8 @@ class FieldGraphs(object):
         self.scene.addWidget(canvas)
         self._graphicView.setScene(self.scene)
 
-    def save(self,graphicView):
-        if graphicView.scene() is None:
+    def save(self):
+        if self._graphicView.scene() is None:
             ErrorMessage(self._iface,0,'Wybierz obiekty i wegenruj wykres',15,0)
         else:
             path: tuple = QFileDialog.getSaveFileName(self.window, 'Otworz', "C:\\", '*.jpg')
