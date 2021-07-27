@@ -218,7 +218,6 @@ class FieldsClassifier:
                                   self._sumArea,
                                   unitLabels,
                                   valuesLabels)
-        converter.convert()
         self._mean = converter.mean
         self._sumArea = converter.sumMean
 
