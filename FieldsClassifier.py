@@ -31,9 +31,6 @@ class FieldsClassifier:
         self._numberOfUniqueClasses: int = 0  # deafult 0 number of classes
         self._classesArea: dict[int: list] = {}  # deafult empty dict for area
         self._crs = None
-        self._colors: dict = {}
-        self._graphLabels: dict = {}
-        self._numberOfFeat = 0
 
     def initGui(self) -> None:
         """
@@ -139,7 +136,7 @@ class FieldsClassifier:
         self._uniqueClasses = calculator._uniqueClasses
         self._numberOfUniqueClasses = calculator.numberOfUniqueClasses
         self._classesArea = calculator._classesArea
-        self._numberOfFeat = calculator.numberOfFeat
+
 
         # set values in form
         fields = [(form.lineEdit, 0), (form.lineEdit_2, 5), (form.lineEdit_3, 5), (form.lineEdit_4, 0)]
@@ -183,11 +180,10 @@ class FieldsClassifier:
                                  form.label_14, form.label_21, form.lineEdit_9, form.mColorButton_4,
                                  form.label_15, form.label_22, form.lineEdit_10, form.mColorButton_5]
         listsToDelete: list = [self._areaFeat, self._selectedFeat]
-        dictsToDelete:list = [self._classesArea, self._colors, self._graphLabels]
+        self._classesArea.clear()
         for list in listsToDelete:
             del list[:]
-        for dic in dictsToDelete:
-            dic.clear()
+
         self.form.lineEdit.setText('0')
         form = self.form
         valuesInText = [form.lineEdit_2, form.lineEdit_3, form.lineEdit_4]
