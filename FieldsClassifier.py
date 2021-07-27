@@ -216,8 +216,8 @@ class FieldsClassifier:
 
         converter = AreaConverter(self.iface,
                                   form,
-                                  form.comboBox.currentText(),
-                                  form.label_5.text(),
+                                  form.comboBox,
+                                  form.label_5,
                                   self._mean,
                                   self._sumArea,
                                   unitLabels,

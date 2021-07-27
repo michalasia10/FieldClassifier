@@ -2,7 +2,6 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from qgis._core import QgsProject
 from typing import List
-from .form import Ui_Dialog
 from qgis.core import *
 from qgis.gui import *
 from qgis.utils import *
@@ -24,7 +23,7 @@ class AreaConverter:
         self._iface = iface
         self.form = form
         self._unit: str = combBoxUnit.currentText()
-        self._oldUnit: str = oldUnit.currenctText()
+        self._oldUnit: str = oldUnit.text()
         self._mean: float = mean
         self._sumArea: float = sumArea
         self._unitLabels = unitLabels
@@ -50,7 +49,7 @@ class AreaConverter:
         if self._unit != self._oldUnit:
             for idx in range(len(valuesList)):
                 self._valuesLabels[idx].setText(f"{round(valuesList[idx],5)}")
-                self._unitLabels[idx].setTex(self._unit)
+                self._unitLabels[idx].setText(self._unit)
 
 
     def _refresh_area_values(self)->None:
