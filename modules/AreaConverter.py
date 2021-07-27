@@ -43,7 +43,6 @@ class AreaConverter:
 
         :return: None
         """
-        form = self.form
         self._refresh_area_values()
         valuesList: list = [self._sumArea, self._mean]
         if self._unit != self._oldUnit:
