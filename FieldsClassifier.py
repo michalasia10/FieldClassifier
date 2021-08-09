@@ -150,13 +150,7 @@ class FieldsClassifier:
         self.window.show()
 
     def _get_default_forms_to_change(self) -> list:
-        defaultWidgetsToActivate: list = [self.form.label, self.form.label_2, self.form.label_3,
-                                          self.form.label_4, self.form.label_5, self.form.label_6,
-                                          self.form.label_11, self.form.label_10, self.form.lineEdit_2,
-                                          self.form.lineEdit_3, self.form.lineEdit_4, self.form.comboBox,
-                                          self.form.pushButton_3, self.form.lineEdit, self.form.pushButton_5,
-                                          self.form.pushButton_6, self.form.label_17,
-                                          self.form.label_16, self.form.label_23, self.form.label_24]
+        defaultWidgetsToActivate: list = [self.form.defaultWidgets]
         return defaultWidgetsToActivate
 
     def _create_selected_list_of_feat(self) -> None:
@@ -174,11 +168,7 @@ class FieldsClassifier:
         :return: None
         """
         form = self.form
-        widgetsForClass: list = [form.label_8, form.label_18, form.lineEdit_6, form.mColorButton,
-                                 form.label_12, form.label_19, form.lineEdit_7, form.mColorButton_2,
-                                 form.label_13, form.label_20, form.lineEdit_8, form.mColorButton_3,
-                                 form.label_14, form.label_21, form.lineEdit_9, form.mColorButton_4,
-                                 form.label_15, form.label_22, form.lineEdit_10, form.mColorButton_5]
+        widgetsForClass: list = [form.classesTable]
         listsToDelete: list = [self._areaFeat, self._selectedFeat]
         self._classesArea.clear()
         for list in listsToDelete:
@@ -276,11 +266,11 @@ class FieldsClassifier:
     def _active_edit_form_for_classes(self):
         form = self.form
         widgetsForClass = {
-            1: [form.label_8, form.label_18, form.lineEdit_6, form.mColorButton],
-            2: [form.label_12, form.label_19, form.lineEdit_7, form.mColorButton_2],
-            3: [form.label_13, form.label_20, form.lineEdit_8, form.mColorButton_3],
-            4: [form.label_14, form.label_21, form.lineEdit_9, form.mColorButton_4],
-            5: [form.label_15, form.label_22, form.lineEdit_10, form.mColorButton_5],
+            1: [form.firstClass],
+            2: [form.seconClass],
+            3: [form.thirdClass],
+            4: [form.thourthClass],
+            5: [form.fifthClass],
 
         }
         for item in self._uniqueClasses:
