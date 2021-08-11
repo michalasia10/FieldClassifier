@@ -216,11 +216,10 @@ class FieldsClassifier:
         Method checks which coordinate system has been selected
         :return: str cordinanate system
         """
-        return self.form.comboBox_2.currentText()
+        return self.form.crsBox.currentText()
 
     def _check_and_return_crs(self):
-        radioButtonYes = self.form.radioButton
-        if radioButtonYes.isChecked():
+        if self.form.yesButton.isChecked():
             self._crs = QgsProject.instance().crs()
         else:
             crs_box = self._check_crs_in_comboBox()
@@ -240,13 +239,12 @@ class FieldsClassifier:
         return False
 
     def _crs_combobox_view(self):
-        radioButtonYes = self.form.radioButton
-        radioButtonNo = self.form.radioButton_2
+        form = self.form
         radios = {
-            radioButtonYes: False,
-            radioButtonNo: True,
+            form.yesButton: False,
+            form.noButton: True,
         }
-        crs = self.form.comboBox_2
+        crs = self.form.crsBox
         for radio, flag in radios.items():
             if radio.isChecked():
                 crs.setEnabled(flag)
@@ -270,13 +268,13 @@ class FieldsClassifier:
         self.window = QDialog()
         self.form = Ui_Dialog()
         self.form.setupUi(self.window)
-        self.form.pushButton_4.clicked.connect(self._open)
-        self.form.pushButton_2.clicked.connect(self._select)
+        self.form.openButton.clicked.connect(self._open)
+        self.form.selectButton.clicked.connect(self._select)
         self.form.refreshButton.clicked.connect(self._convert)
         self.form.cleanButton.clicked.connect(self._clean_object)
         self.form.buttonBox_2.clicked.connect(self.window.close)
-        self.form.radioButton_2.toggled.connect(self._crs_combobox_view)
-        self.form.radioButton.toggled.connect(self._crs_combobox_view)
-        self.form.pushButton.clicked.connect(self.save_graph)
-        self.form.pushButton_6.clicked.connect(self.draw_graph)
+        self.form.yesButton.toggled.connect(self._crs_combobox_view)
+        self.form.noButton.toggled.connect(self._crs_combobox_view)
+        self.form.saveButton.clicked.connect(self.save_graph)
+        self.form.drawButton.clicked.connect(self.draw_graph)
         self.window.show()
