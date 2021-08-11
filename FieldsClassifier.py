@@ -140,7 +140,6 @@ class FieldsClassifier:
         self._classesArea = calculator._classesArea
 
         # set values in form
-        # fields = [(form.lineEdit, 0), (form.lineEdit_2, 5), (form.lineEdit_3, 5), (form.lineEdit_4, 0)]
         fields = [(form.numberOfFieldLine, 0), (form.sumLine, 5), (form.meanLine, 5), (form.classLine, 0)]
         calculator.set_text_for_fields(fields)
 
@@ -249,27 +248,10 @@ class FieldsClassifier:
                 crs.setEnabled(flag)
 
     def draw_graph(self):
-        form = self.form
-        labels = {
-            1: form.firstClassLine,
-            2: form.secondClassLine,
-            3: form.thirdClassLine,
-            4: form.fourthClassLine,
-            5: form.fifthClassLine,
-        }
-        colors = {
-            1: form.firstClassColor,
-            2: form.secondClassColor,
-            3: form.thirdClassColor,
-            4: form.fourthClassColor,
-            5: form.fifthClassColor,
-        }
         self.graphs = FieldGraphs(self.iface,
                                   self.window,
                                   self.form,
                                   self._uniqueClasses,
-                                  colors,
-                                  labels,
                                   self._classesArea,
                                   )
 
