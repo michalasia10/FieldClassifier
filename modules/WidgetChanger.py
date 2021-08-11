@@ -24,7 +24,6 @@ class WidgetChanger:
     def reset_widget(self,widget,value):
         widget.setText(value)
 
-
     def set_value_in_widgets(self,widgets:list,value):
         for widget in widgets:
             widget.setText(value)
