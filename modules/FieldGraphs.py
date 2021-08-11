@@ -1,9 +1,6 @@
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from typing import List
-from qgis.core import *
-from qgis.gui import *
-from qgis.utils import *
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,7 +16,7 @@ class FieldGraphs(object):
         self._colorDict = colorDict
         self._labelDict = labelDict
         self._classesArea = classesArea
-        self._graphicView = self.form.graphicScene
+        self._graphicView = self.form.graphScene
         self._uniqueClasses = uniqueClasses
         self.plot_bar_chart()
 
