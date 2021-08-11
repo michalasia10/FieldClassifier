@@ -20,12 +20,12 @@ PROBLEM_TYPE = {
 
 class ErrorMessage:
 
-    def __init__(self,iface,problemType,message,time,messageType):
+    def __init__(self,iface,problemType,message,time):
         self._iface = iface
         self._problemType = PROBLEM_TYPE[problemType]
         self._message = message
         self._time = time
-        self._messageType = MESSAGE_TYPE[messageType]
+        self._messageType = MESSAGE_TYPE[problemType]
         self._push_message()
 
     def _push_message(self):
