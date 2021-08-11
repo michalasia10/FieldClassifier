@@ -11,7 +11,8 @@ from .modules.FieldGraphs import FieldGraphs
 from .modules.FieldCalculator import FieldCalculator
 from .modules.ErrosMessage import ErrorMessage
 from .modules.AreaConverter import AreaConverter
-
+from .modules.WidgetActivator import WidgetActivator
+from .modules.WidgetChanger import WidgetChanger
 
 # load icon
 with importlib.resources.path("FieldsClassifier", "iconPlugin.png") as data_path:
@@ -100,10 +101,10 @@ class FieldsClassifier:
         The method is responsible for selecting objects with freehand, if there is no layer, it will show ERROR.
         :return: None
         """
-        self.iface.actionSelectFreehand().trigger()
         noLayers: bool = self._check_is_any_active_layer()
         if not noLayers:
             self._clean_object()
+            self.iface.actionSelectFreehand().trigger()
             self._check_is_any_selected_feat()
             self.window.hide()
             layer = self.iface.activeLayer()
@@ -124,9 +125,10 @@ class FieldsClassifier:
         self._create_selected_list_of_feat()
 
         # set unit for selected objects
-        unitName: str = form.comboBox.currentText()
-        labels: list = [form.label_5, form.label_6, ]
-        self._set_text_for_list(labels, unitName)
+        unitName: str = form.unitBox.currentText()
+        labels: list = [form.unitText, form.unitText_2]
+        changeUnit = WidgetChanger(form)
+        changeUnit.set_value_in_widgets(labels, unitName)
 
         # init class to count all vars
         calculator = FieldCalculator(self._selectedFeat)
@@ -137,27 +139,14 @@ class FieldsClassifier:
         self._numberOfUniqueClasses = calculator.numberOfUniqueClasses
         self._classesArea = calculator._classesArea
 
-
         # set values in form
-        fields = [(form.lineEdit, 0), (form.lineEdit_2, 5), (form.lineEdit_3, 5), (form.lineEdit_4, 0)]
+        fields = [(form.numberOfFieldLine, 0), (form.sumLine, 5), (form.meanLine, 5), (form.classLine, 0)]
         calculator.set_text_for_fields(fields)
 
-        # active default widgets
-        self._active_widgets(self._get_default_forms_to_change())
-
-        # active widgets only for class from selected feat
-        self._active_edit_form_for_classes()
+        # active widgets
+        activeWidgets = WidgetActivator(self.form, self._uniqueClasses)
+        activeWidgets.change_visibility(True)
         self.window.show()
-
-    def _get_default_forms_to_change(self) -> list:
-        defaultWidgetsToActivate: list = [self.form.label, self.form.label_2, self.form.label_3,
-                                          self.form.label_4, self.form.label_5, self.form.label_6,
-                                          self.form.label_11, self.form.label_10, self.form.lineEdit_2,
-                                          self.form.lineEdit_3, self.form.lineEdit_4, self.form.comboBox,
-                                          self.form.pushButton_3, self.form.lineEdit, self.form.pushButton_5,
-                                          self.form.pushButton_6, self.form.label_17,
-                                          self.form.label_16, self.form.label_23, self.form.label_24]
-        return defaultWidgetsToActivate
 
     def _create_selected_list_of_feat(self) -> None:
         """
@@ -174,27 +163,23 @@ class FieldsClassifier:
         :return: None
         """
         form = self.form
-        widgetsForClass: list = [form.label_8, form.label_18, form.lineEdit_6, form.mColorButton,
-                                 form.label_12, form.label_19, form.lineEdit_7, form.mColorButton_2,
-                                 form.label_13, form.label_20, form.lineEdit_8, form.mColorButton_3,
-                                 form.label_14, form.label_21, form.lineEdit_9, form.mColorButton_4,
-                                 form.label_15, form.label_22, form.lineEdit_10, form.mColorButton_5]
         listsToDelete: list = [self._areaFeat, self._selectedFeat]
+        floatListToClean = [self._sumArea, self._mean]
+        linesToClean = [form.sumLine, form.meanLine, form.classLine]
+        cleaner = WidgetChanger(form)
+        cleaner.clean_scene()
+        cleaner.reset_widget(form.numberOfFieldLine, '0')
+        cleaner.set_value_in_widgets(linesToClean, "")
+        self._unit = "m2"
+        unitsToReset = [form.unitText,form.unitText_2]
+        cleaner.set_value_in_widgets(unitsToReset,self._unit)
+        form.unitBox.setCurrentText(self._unit)
+        cleaner.deactivate_widgets(self._uniqueClasses)
+        self._areaFeat, self._selectedFeat = cleaner.list_drainer(listsToDelete)
+        self._sumArea, self._mean = cleaner.deafult_float_values(floatListToClean)
         self._classesArea.clear()
-        for list in listsToDelete:
-            del list[:]
-
-        self.form.lineEdit.setText('0')
-        form = self.form
-        valuesInText = [form.lineEdit_2, form.lineEdit_3, form.lineEdit_4]
-        self._active_widgets(widgetsForClass, False)
-        self._active_widgets(self._get_default_forms_to_change(), False)
-        self._set_text_for_list(valuesInText, "")
-        self._sumArea = 0.0
+        self._uniqueClasses = {}
         self._check_is_any_selected_feat()
-        scene = self.form.graphicsView_2
-        if scene.scene() is not None:
-            self.form.graphicsView_2.scene().clear()
 
     def _convert(self) -> None:
         """
@@ -203,29 +188,19 @@ class FieldsClassifier:
         :return: None
         """
         form = self.form
-        unitLabels:list = [form.label_5, form.label_6]
-        valuesLabels:list = [form.lineEdit_2, form.lineEdit_3]
+        unitLabels: list = [form.unitText, form.unitText_2]
+        valuesLabels: list = [form.sumLine, form.meanLine]
 
         converter = AreaConverter(self.iface,
                                   form,
-                                  form.comboBox,
-                                  form.label_5,
+                                  form.unitBox,
+                                  form.unitText,
                                   self._mean,
                                   self._sumArea,
                                   unitLabels,
                                   valuesLabels)
         self._mean = converter.mean
         self._sumArea = converter.sumMean
-
-    def _set_text_for_list(self, lines: list, text: str):
-        """
-        method will change the text for the given labels
-        :param lines: list of lines
-        :param text: text to set
-        :return:
-        """
-        for line in lines:
-            line.setText(text)
 
     def _check_is_any_selected_feat(self) -> None:
         """
@@ -241,11 +216,10 @@ class FieldsClassifier:
         Method checks which coordinate system has been selected
         :return: str cordinanate system
         """
-        return self.form.comboBox_2.currentText()
+        return self.form.crsBox.currentText()
 
     def _check_and_return_crs(self):
-        radioButtonYes = self.form.radioButton
-        if radioButtonYes.isChecked():
+        if self.form.yesButton.isChecked():
             self._crs = QgsProject.instance().crs()
         else:
             crs_box = self._check_crs_in_comboBox()
@@ -264,64 +238,24 @@ class FieldsClassifier:
             return True
         return False
 
-    def _active_widgets(self, widgets: list, flag: bool = True, ) -> None:
-        """
-        The method enables or disables widgets
-        :param flag: bolean flah
-        :return: None
-        """
-        for widget in widgets:
-            widget.setEnabled(flag)
-
-    def _active_edit_form_for_classes(self):
-        form = self.form
-        widgetsForClass = {
-            1: [form.label_8, form.label_18, form.lineEdit_6, form.mColorButton],
-            2: [form.label_12, form.label_19, form.lineEdit_7, form.mColorButton_2],
-            3: [form.label_13, form.label_20, form.lineEdit_8, form.mColorButton_3],
-            4: [form.label_14, form.label_21, form.lineEdit_9, form.mColorButton_4],
-            5: [form.label_15, form.label_22, form.lineEdit_10, form.mColorButton_5],
-
-        }
-        for item in self._uniqueClasses:
-            self._active_widgets(widgetsForClass[item])
-
     def _crs_combobox_view(self):
-        radioButtonYes = self.form.radioButton
-        radioButtonNo = self.form.radioButton_2
+        form = self.form
         radios = {
-            radioButtonYes: False,
-            radioButtonNo: True,
+            form.yesButton: False,
+            form.noButton: True,
         }
-        crs = self.form.comboBox_2
+        crs = self.form.crsBox
         for radio, flag in radios.items():
             if radio.isChecked():
                 crs.setEnabled(flag)
 
     def draw_graph(self):
-        form = self.form
-        labels = {
-            1: form.lineEdit_6,
-            2: form.lineEdit_7,
-            3: form.lineEdit_8,
-            4: form.lineEdit_9,
-            5: form.lineEdit_10,
-        }
-        colors = {
-            1: form.mColorButton,
-            2: form.mColorButton_2,
-            3: form.mColorButton_3,
-            4: form.mColorButton_4,
-            5: form.mColorButton_5,
-        }
         self.graphs = FieldGraphs(self.iface,
                                   self.window,
                                   self.form,
                                   self._uniqueClasses,
-                                  colors,
-                                  labels,
                                   self._classesArea,
-                                  self.form.graphicsView_2)
+                                  )
 
     def save_graph(self):
         self.graphs.save()
@@ -334,13 +268,13 @@ class FieldsClassifier:
         self.window = QDialog()
         self.form = Ui_Dialog()
         self.form.setupUi(self.window)
-        self.form.pushButton_4.clicked.connect(self._open)
-        self.form.pushButton_2.clicked.connect(self._select)
-        self.form.pushButton_3.clicked.connect(self._convert)
-        self.form.pushButton_5.clicked.connect(self._clean_object)
+        self.form.openButton.clicked.connect(self._open)
+        self.form.selectButton.clicked.connect(self._select)
+        self.form.refreshButton.clicked.connect(self._convert)
+        self.form.cleanButton.clicked.connect(self._clean_object)
         self.form.buttonBox_2.clicked.connect(self.window.close)
-        self.form.radioButton_2.toggled.connect(self._crs_combobox_view)
-        self.form.radioButton.toggled.connect(self._crs_combobox_view)
-        self.form.pushButton.clicked.connect(self.save_graph)
-        self.form.pushButton_6.clicked.connect(self.draw_graph)
+        self.form.yesButton.toggled.connect(self._crs_combobox_view)
+        self.form.noButton.toggled.connect(self._crs_combobox_view)
+        self.form.saveButton.clicked.connect(self.save_graph)
+        self.form.drawButton.clicked.connect(self.draw_graph)
         self.window.show()
