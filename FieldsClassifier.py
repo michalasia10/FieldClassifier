@@ -149,10 +149,6 @@ class FieldsClassifier:
         activeWidgets.change_visibility(True)
         self.window.show()
 
-    def _get_default_forms_to_change(self) -> list:
-        defaultWidgetsToActivate: list = [self.form.statWidgets]
-        return defaultWidgetsToActivate
-
     def _create_selected_list_of_feat(self) -> None:
         """
         The method responsible for creating a list of selected objects
