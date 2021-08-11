@@ -3,7 +3,7 @@ class WidgetActivator:
         self._form = form
         self._uniqueClasses = uniqueClasses
 
-    def widget_activator(self, flag: bool = True):
+    def change_visibility(self, flag: bool = True):
         form = self._form
         widgetsForClass = {
             1: form.firstClassW,
