@@ -12,14 +12,14 @@ from .ListCreator import ListCreator
 
 class FieldGraphs(object):
 
-    def __init__(self, iface, window, form,uniqueClasses,colorDict,labelDict,classesArea,graphicView):
+    def __init__(self, iface, window, form,uniqueClasses,colorDict,labelDict,classesArea):
         self._iface = iface
         self.form = form
         self.window = window
         self._colorDict = colorDict
         self._labelDict = labelDict
         self._classesArea = classesArea
-        self._graphicView = graphicView
+        self._graphicView = self.form.graphicScene
         self._uniqueClasses = uniqueClasses
         self.plot_bar_chart()
 
