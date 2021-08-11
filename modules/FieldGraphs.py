@@ -9,12 +9,10 @@ from .ListCreator import ListCreator
 
 class FieldGraphs(object):
 
-    def __init__(self, iface, window, form,uniqueClasses,colorDict,labelDict,classesArea):
+    def __init__(self, iface, window, form,uniqueClasses,classesArea):
         self._iface = iface
         self.form = form
         self.window = window
-        self._colorDict = colorDict
-        self._labelDict = labelDict
         self._classesArea = classesArea
         self._graphicView = self.form.graphScene
         self._uniqueClasses = uniqueClasses
@@ -25,11 +23,26 @@ class FieldGraphs(object):
         The method is responsible for creating the chart
         :return: None
         """
+        form = self.form
+        labelsDict = {
+            1: form.firstClassLine,
+            2: form.secondClassLine,
+            3: form.thirdClassLine,
+            4: form.fourthClassLine,
+            5: form.fifthClassLine,
+        }
+        colorsDict = {
+            1: form.firstClassColor,
+            2: form.secondClassColor,
+            3: form.thirdClassColor,
+            4: form.fourthClassColor,
+            5: form.fifthClassColor,
+        }
 
-        colors = ListCreator(self._uniqueClasses,self._colorDict)
+        colors = ListCreator(self._uniqueClasses,colorsDict)
         colors.create_color_dict()
         colors = colors.create_list(tuple)
-        labels = ListCreator(self._uniqueClasses,self._labelDict)
+        labels = ListCreator(self._uniqueClasses,labelsDict)
         labels.create_label_dict()
         labels = labels.create_list(str)
 
