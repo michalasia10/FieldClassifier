@@ -170,6 +170,10 @@ class FieldsClassifier:
         cleaner.clean_scene()
         cleaner.reset_widget(form.numberOfFieldLine, '0')
         cleaner.set_value_in_widgets(linesToClean, "")
+        self._unit = "m2"
+        unitsToReset = [form.unitText,form.unitText_2]
+        cleaner.set_value_in_widgets(unitsToReset,self._unit)
+        form.unitBox.setCurrentText(self._unit)
         cleaner.deactivate_widgets(self._uniqueClasses)
         self._areaFeat, self._selectedFeat = cleaner.list_drainer(listsToDelete)
         self._sumArea, self._mean = cleaner.deafult_float_values(floatListToClean)
