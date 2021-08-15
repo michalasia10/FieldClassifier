@@ -67,11 +67,11 @@ class FieldGraphs(object):
 
     def save(self):
         if self._graphicView.scene() is None:
-            ErrorMessage(self._iface,0,'Wybierz obiekty i wegenruj wykres',15,0)
+            ErrorMessage(self._iface,0,'Wybierz obiekty i wegenruj wykres',15)
         else:
             path: tuple = QFileDialog.getSaveFileName(self.window, 'Otworz', "C:\\", '*.jpg')
             if path[0] == '':
-                ErrorMessage(self._iface, 1,'Brak wybranej ścieżki do zapisu',15,1)
+                ErrorMessage(self._iface, 1,'Brak wybranej ścieżki do zapisu',15)
             else:
                 self.fig.savefig(path[0], format='png')
-                ErrorMessage(self._iface, 3, "Legenda zapisana poprawnie", 10, 3)
+                ErrorMessage(self._iface, 3, "Legenda zapisana poprawnie", 10)
