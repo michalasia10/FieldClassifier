@@ -62,10 +62,10 @@ class FieldsClassifier:
         if path[0]:
             lineEdit.setText(path[0])
             self.iface.addVectorLayer(path[0], '', 'ogr').setCrs(crs)
-            ErrorMessage(self.iface, 3, f"Wgrano poprawnie plik", 5, 3)
+            ErrorMessage(self.iface, 3, f"Wgrano poprawnie plik", 5)
         else:
             lineEdit.setText('Nie wybrano pliku')
-            ErrorMessage(self.iface, 2, "Nie wybrano pliku", 5, 2)
+            ErrorMessage(self.iface, 2, "Nie wybrano pliku", 5)
 
     def _select(self) -> None:
         noLayers: bool = self._check_is_any_active_layer()
@@ -169,7 +169,7 @@ class FieldsClassifier:
     def _check_is_any_active_layer(self) -> bool:
         layerList: bool = any([lyr for lyr in QgsProject.instance().mapLayers().values()])
         if not layerList:
-            ErrorMessage(self.iface, 2, "Brak warstwy z obiektami", 10, 2)
+            ErrorMessage(self.iface, 2, "Brak warstwy z obiektami", 10)
             return True
         return False
 
