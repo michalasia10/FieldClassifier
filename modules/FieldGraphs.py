@@ -19,10 +19,6 @@ class FieldGraphs(object):
         self.plot_bar_chart()
 
     def plot_bar_chart(self) -> None:
-        """
-        The method is responsible for creating the chart
-        :return: None
-        """
         form = self.form
         labelsDict = {
             1: form.firstClassLine,
