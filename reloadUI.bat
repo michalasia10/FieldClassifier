@@ -1,1 +1,0 @@
-@"C:\Program Files\QGIS 3.20.1\apps\Python39\Scripts\pyuic5.exe" %1 %2 %3 %4 %5 %6 %7 %8 %9
